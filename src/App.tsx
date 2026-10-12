@@ -16,7 +16,7 @@ import {
   initStorageWithSampleIfEmpty,
   sampleRevisionSheet,
 } from './services/db';
-import { generateRevisionSheet } from './services/gemini';
+import { generateRevisionSheet, fetchDynamicSteps } from './services/gemini';
 import { AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -28,6 +28,7 @@ export default function App() {
   const [subjectHint, setSubjectHint] = useState<string>('');
   const [currentSheet, setCurrentSheet] = useState<RevisionSheet>(sampleRevisionSheet);
   const [savedSheets, setSavedSheets] = useState<RevisionSheet[]>([]);
+  const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
@@ -62,6 +63,15 @@ export default function App() {
 
     setErrorMessage(null);
     setCurrentPage('generating');
+
+    // Dynamically request AI steps tailored to the subject, prompt and photos (max 6 steps)
+    fetchDynamicSteps({
+      prompt: prompt || 'Toutes les notions importantes',
+      subjectHint,
+      photoCount: photos.length,
+    }).then((steps) => {
+      setGenerationSteps(steps);
+    });
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -180,6 +190,7 @@ export default function App() {
 
         {currentPage === 'generating' && (
           <GeneratingPage
+            steps={generationSteps}
             photoCount={photos.length}
             onCancel={handleCancelGeneration}
           />

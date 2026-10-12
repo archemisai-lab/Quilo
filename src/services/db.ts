@@ -130,11 +130,23 @@ export async function deleteSheet(id: string): Promise<void> {
   await db.delete('sheets', id);
 }
 
+const SEEDED_KEY = 'quilo_initial_sample_seeded';
+
 export async function initStorageWithSampleIfEmpty(): Promise<RevisionSheet[]> {
   const sheets = await getAllSheets();
-  if (sheets.length === 0) {
+  const hasSeededBefore = localStorage.getItem(SEEDED_KEY) === 'true';
+
+  // Seed the WW1 example ONLY ONCE on the very first launch ever
+  if (!hasSeededBefore && sheets.length === 0) {
+    localStorage.setItem(SEEDED_KEY, 'true');
     await saveSheet(sampleRevisionSheet);
     return [sampleRevisionSheet];
   }
+
+  // Ensure flag is set so it never respawns even if the user deletes all sheets
+  if (!hasSeededBefore) {
+    localStorage.setItem(SEEDED_KEY, 'true');
+  }
+
   return sheets;
 }

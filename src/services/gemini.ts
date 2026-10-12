@@ -70,3 +70,36 @@ export async function generateRevisionSheet({
 
   return newSheet;
 }
+
+export async function fetchDynamicSteps({
+  prompt,
+  subjectHint,
+  photoCount,
+}: {
+  prompt: string;
+  subjectHint?: string;
+  photoCount: number;
+}): Promise<string[]> {
+  try {
+    const res = await fetch('/api/generate-steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, subjectHint, photoCount }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.steps && Array.isArray(data.steps) && data.steps.length >= 3) {
+        return data.steps;
+      }
+    }
+  } catch (err) {
+    console.warn('Erreur récupération étapes personnalisées:', err);
+  }
+
+  return [
+    `Déchiffrage des ${photoCount} photos du cours...`,
+    'Repérage des notions indispensables et définitions...',
+    'Synthèse de l’essentiel pour le contrôle...',
+    'Mise en page de la fiche visuelle compacte...',
+  ];
+}

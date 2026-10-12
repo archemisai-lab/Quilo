@@ -20,6 +20,114 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Helper for dynamic contextual steps fallback
+function getDynamicContextualSteps(subject?: string, promptText?: string, count?: number): string[] {
+  const p = (promptText || '').toLowerCase();
+  const s = (subject || '').toLowerCase();
+  const c = count || 2;
+
+  if (s.includes('hist') || p.includes('date') || p.includes('guerre')) {
+    return [
+      `Déchiffrage des ${c} pages de cours d'Histoire...`,
+      'Repérage des dates repères et de la chronologie...',
+      'Extraction des définitions historiques majeures...',
+      'Synthèse des causes et conséquences pour le contrôle...',
+      'Finalisation de la fiche compacte...',
+    ];
+  }
+  if (s.includes('math') || p.includes('formul') || p.includes('théor')) {
+    return [
+      `Analyse des théorèmes et calculs sur les ${c} photos...`,
+      'Isolation des formules et propriétés fondamentales...',
+      'Extraction des conditions d’application...',
+      'Structuration de la méthode de rédaction type...',
+      'Mise en page de la fiche de révision...',
+    ];
+  }
+  if (s.includes('svt') || s.includes('bio') || p.includes('schéma')) {
+    return [
+      `Observation des notes de SVT et annotations...`,
+      'Extraction du vocabulaire scientifique et des définitions...',
+      'Décryptage des mécanismes et schémas du cours...',
+      'Sélection des points essentiels pour l’évaluation...',
+      'Assemblage de la fiche de synthèse...',
+    ];
+  }
+  if (s.includes('phys') || s.includes('chim')) {
+    return [
+      `Lecture des lois et formules de physique-chimie...`,
+      'Extraction des unités de mesure et définitions...',
+      'Synthèse des expériences et applications directes...',
+      'Vérification des notions clés pour le contrôle...',
+      'Mise en page de la fiche de révision compacte...',
+    ];
+  }
+
+  return [
+    `Déchiffrage et amélioration des ${c} photos du cahier...`,
+    `Ciblage de la consigne : « ${promptText ? promptText.slice(0, 30) + '...' : 'notions clés'} »...`,
+    'Extraction des définitions indispensables...',
+    'Sélection des repères clés pour l’évaluation...',
+    'Mise en page de la fiche visuelle compacte...',
+  ];
+}
+
+// Endpoint to generate dynamic contextual steps via Gemini
+app.post('/api/generate-steps', async (req, res) => {
+  try {
+    const { prompt, subjectHint, photoCount } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.json({ steps: getDynamicContextualSteps(subjectHint, prompt, photoCount) });
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+
+    const instruction = `Génère exactement entre 4 et 6 étapes de traitement courtes, dynamiques et très précises (4 à 8 mots par étape, se terminant impérativement par '...') pour une web app (Quilo) qui compile des photos de cours.
+L'élève a fourni ${photoCount || 2} photos.
+Matière : "${subjectHint || 'Général'}"
+Consigne : "${prompt || 'Notions clés'}"
+
+IMPORTANT : Les étapes doivent être spécifiques au cours (mentionne par exemple les formules, les dates, les mécanismes ou le vocabulaire lié à "${subjectHint || 'cette matière'}").
+Format JSON strict uniquement :
+{"steps": ["étape 1...", "étape 2...", "étape 3...", "étape 4...", "étape 5..."]}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: instruction,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.3,
+      },
+    });
+
+    const clean = (response.text || '')
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    const parsed = JSON.parse(clean);
+    if (parsed.steps && Array.isArray(parsed.steps) && parsed.steps.length >= 3) {
+      return res.json({ steps: parsed.steps.slice(0, 6) });
+    }
+    return res.json({ steps: getDynamicContextualSteps(subjectHint, prompt, photoCount) });
+  } catch (err) {
+    console.warn('Erreur generate-steps, utilisation du fallback dynamique:', err);
+    return res.json({
+      steps: getDynamicContextualSteps(req.body.subjectHint, req.body.prompt, req.body.photoCount),
+    });
+  }
+});
+
 // Gemini generation endpoint
 app.post('/api/generate', async (req, res) => {
   try {
