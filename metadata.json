@@ -1,0 +1,6 @@
+{
+  "name": "Quilo",
+  "description": "Transforme les photos de cours en fiches de révision claires, compactes et exportables pour collégiens et lycéens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

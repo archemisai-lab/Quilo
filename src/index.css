@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-quilo-blue: #5B8DEF;
+  --color-quilo-blue-dark: #4874D6;
+  --color-quilo-yellow: #FFC04D;
+  --color-quilo-dark: #1E2A3A;
+  --color-quilo-secondary: #4B5A70;
+  --color-quilo-bg: #F4F6FA;
+  --color-quilo-card: #FFFFFF;
+  --color-quilo-border: #E1E7F0;
+  --color-quilo-success: #4CAF7D;
+  --color-quilo-alert: #E8604C;
+
+  --font-baloo: "Baloo 2", cursive, sans-serif;
+  --font-inter: "Inter", sans-serif;
+}
+
+body {
+  font-family: var(--font-inter);
+  color: #1E2A3A;
+  background-color: #F4F6FA;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-baloo);
+}
+
+/* Subtle print styles for clean printing */
+@media print {
+  body {
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
