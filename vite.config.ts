@@ -27,7 +27,7 @@ export default defineConfig(() => {
           description:
             'Transforme tes photos de cours en fiches de révision claires, visuelles et compactes pour collégiens et lycéens.',
           theme_color: '#5B8DEF',
-          background_color: '#F4F6FA',
+          background_color: '#F2F3F5',
           display: 'standalone',
           orientation: 'portrait-primary',
           start_url: '/',

@@ -1,30 +1,50 @@
-<svg viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Antenna -->
   <g id="antenna">
-    <path d="M160 88V50" stroke="#5B8DEF" stroke-width="16" stroke-linecap="round"/>
-    <circle cx="160" cy="42" r="20" fill="#FFC04D"/>
-    <circle cx="154" cy="36" r="6" fill="#FFE799" opacity="0.6"/>
+    <!-- Blue vertical antenna stem -->
+    <rect x="245" y="122" width="22" height="52" rx="11" fill="#4F81EE"/>
+    <!-- Yellow/Orange antenna sphere -->
+    <circle cx="256" cy="102" r="26" fill="#FDB241"/>
+    <!-- Highlight dot on antenna sphere -->
+    <circle cx="248" cy="94" r="8" fill="#FEE3B4"/>
   </g>
+
+  <!-- Feet (Darker blue) -->
   <g id="feet">
-    <rect x="112" y="245" width="34" height="32" rx="17" fill="#4874D6"/>
-    <rect x="174" y="245" width="34" height="32" rx="17" fill="#4874D6"/>
+    <rect x="194" y="370" width="42" height="34" rx="21" fill="#3D71DD"/>
+    <rect x="276" y="370" width="42" height="34" rx="21" fill="#3D71DD"/>
   </g>
+
+  <!-- Left Arm / Nub -->
   <g id="left-arm">
-    <path d="M80 180C58 180 44 200 48 222C52 242 74 250 88 238C98 228 98 196 80 180Z" fill="#5B8DEF"/>
+    <ellipse cx="140" cy="326" rx="36" ry="38" transform="rotate(-15 140 326)" fill="#4F81EE"/>
   </g>
-  <circle cx="160" cy="175" r="95" fill="#5B8DEF"/>
-  <g id="camera-eye">
-    <circle cx="160" cy="175" r="68" fill="#FFFFFF"/>
-    <circle cx="160" cy="175" r="54" fill="#1E2A3A"/>
-    <ellipse cx="140" cy="155" rx="16" ry="19" transform="rotate(-25 140 155)" fill="#FFFFFF"/>
-    <circle cx="127" cy="183" r="7" fill="#FFFFFF"/>
+
+  <!-- Main Body Circle -->
+  <circle cx="256" cy="270" r="118" fill="#4F81EE"/>
+
+  <!-- Center Eye / Camera Lens -->
+  <g id="eye">
+    <!-- Outer thick white circle -->
+    <circle cx="250" cy="270" r="82" fill="#FFFFFF"/>
+    <!-- Dark charcoal/navy inner circle -->
+    <circle cx="250" cy="270" r="65" fill="#1E2530"/>
+    <!-- Large white reflection -->
+    <circle cx="228" cy="248" r="20" fill="#FFFFFF"/>
+    <!-- Small white reflection -->
+    <circle cx="215" cy="284" r="8.5" fill="#FFFFFF"/>
   </g>
-  <g id="revision-sheet" transform="rotate(12 250 195)">
-    <rect x="195" y="125" width="82" height="105" rx="14" fill="#FFFFFF" stroke="#E1E7F0" stroke-width="3"/>
-    <rect x="212" y="152" width="48" height="7" rx="3.5" fill="#1E2A3A"/>
-    <rect x="212" y="168" width="52" height="7" rx="3.5" fill="#1E2A3A"/>
-    <rect x="212" y="184" width="38" height="7" rx="3.5" fill="#1E2A3A"/>
+
+  <!-- Right Paper Sheet (Tilted) -->
+  <g id="paper-sheet" transform="rotate(8 350 280)">
+    <!-- White rounded paper card -->
+    <rect x="296" y="210" width="102" height="136" rx="22" fill="#FFFFFF"/>
+    <!-- 3 Dark rounded text lines on sheet -->
+    <rect x="330" y="246" width="56" height="9" rx="4.5" fill="#1E2530"/>
+    <rect x="326" y="268" width="66" height="9" rx="4.5" fill="#1E2530"/>
+    <rect x="322" y="290" width="50" height="9" rx="4.5" fill="#1E2530"/>
   </g>
-  <g id="right-hand">
-    <circle cx="270" cy="216" r="18" fill="#4874D6"/>
-  </g>
+
+  <!-- Right Hand (Floating blue circle) -->
+  <circle cx="404" cy="342" r="25" fill="#4F81EE"/>
 </svg>
