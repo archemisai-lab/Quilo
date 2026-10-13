@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   FileText,
   Sparkles,
+  Monitor,
 } from 'lucide-react';
 
 interface FooterProps {
@@ -26,6 +27,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showDesktopGuide, setShowDesktopGuide] = useState(false);
+
+  const handleGenericInstall = async () => {
+    const success = await install();
+    if (!success) {
+      setShowDesktopGuide(true);
+    }
+  };
 
   return (
     <footer className="bg-[#FFFFFF] border-t border-[#E1E7F0] mt-auto no-print">
@@ -72,7 +81,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   </button>
                 ) : (
                   <button
-                    onClick={install}
+                    onClick={handleGenericInstall}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
                   >
                     <Smartphone className="w-4 h-4" />
@@ -248,6 +257,68 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
             >
               C'est compris
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Guided Installation Modal */}
+      {showDesktopGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2A3A]/50 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowDesktopGuide(false)}
+        >
+          <div
+            className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <QuiloMascot size={32} />
+                <div>
+                  <h3 className="font-heading font-bold text-base text-[#1E2A3A]">
+                    Installer sur ordinateur
+                  </h3>
+                  <p className="text-[11px] text-[#4B5A70]">
+                    Chrome, Edge, Brave ou navigateur compatible
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDesktopGuide(false)}
+                className="text-[#4B5A70] hover:text-[#1E2A3A] p-1 rounded-md transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 pt-1 text-xs text-[#1E2A3A]">
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
+                <Monitor className="w-4 h-4 text-[#5B8DEF] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">1. Dans la barre d'adresse</span>
+                  <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                    Cliquez sur l'icône <strong>Installer (⊕)</strong> située à droite de la barre d'URL.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
+                <Download className="w-4 h-4 text-[#4CAF7D] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">2. Ou via le menu du navigateur</span>
+                  <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                    Cliquez sur les trois points (⋮) puis sur <strong>« Installer Quilo... »</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowDesktopGuide(false)}
+              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              Fermer
             </button>
           </div>
         </div>

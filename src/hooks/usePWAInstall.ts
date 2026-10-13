@@ -11,11 +11,17 @@ export function usePWAInstall() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Detect standalone mode (already installed on home screen)
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    setIsInstalled(isStandalone);
+    // Detect standalone mode (strictly when launched as an installed PWA from home screen / launcher)
+    try {
+      const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
+      const isNavStandalone = (window.navigator as unknown as { standalone?: boolean })?.standalone === true;
+      // Do not falsely treat preview iframes (Netlify deploy preview, AI Studio preview) as standalone app
+      const isEmbedded = window.self !== window.top;
+      const isTrulyStandalone = !isEmbedded && (isStandaloneMedia || isNavStandalone);
+      setIsInstalled(isTrulyStandalone);
+    } catch {
+      setIsInstalled(false);
+    }
 
     // Detect iOS devices (iPhone, iPad, iPod)
     const userAgent = window.navigator.userAgent.toLowerCase();
