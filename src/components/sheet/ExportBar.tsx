@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { RevisionSheet } from '../../types/revision';
 import { exportToPDF, exportToPNG, exportToDOCX } from '../../services/exporters';
-import { FileText, Image as ImageIcon, FileCode2, Printer, Check, Loader2 } from 'lucide-react';
+import { getShareUrl } from '../../services/share';
+import {
+  FileText,
+  Image as ImageIcon,
+  FileCode2,
+  Printer,
+  Check,
+  Loader2,
+  Share2,
+} from 'lucide-react';
 
 interface ExportBarProps {
   sheet: RevisionSheet;
@@ -41,6 +50,49 @@ export const ExportBar: React.FC<ExportBarProps> = ({
     window.print();
   };
 
+  // Direct native share without custom modal
+  const handleShare = async () => {
+    const shareUrl = getShareUrl(sheet);
+    const fullMessage = `Viens voir ma fiche de révision ➡️ ${shareUrl}`;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: `Fiche de révision : ${sheet.title}`,
+          text: `Viens voir ma fiche de révision ➡️ `,
+          url: shareUrl,
+        });
+        setSuccessMessage('Fiche partagée !');
+        setTimeout(() => setSuccessMessage(null), 3500);
+      } catch (err: any) {
+        // User cancelled native share or dismissed it
+        if (err?.name !== 'AbortError') {
+          console.warn('Native share issue, fallback copy:', err);
+          await fallbackCopy(fullMessage);
+        }
+      }
+    } else {
+      // Fallback on desktop browsers without Web Share API
+      await fallbackCopy(fullMessage);
+    }
+  };
+
+  const fallbackCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setSuccessMessage('Lien copié dans le presse-papier !');
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setSuccessMessage('Lien copié dans le presse-papier !');
+    }
+    setTimeout(() => setSuccessMessage(null), 3500);
+  };
+
   return (
     <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl p-4 sm:p-5 shadow-xs mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
       {/* Left status confirmation */}
@@ -65,6 +117,16 @@ export const ExportBar: React.FC<ExportBarProps> = ({
             {successMessage}
           </span>
         )}
+
+        {/* Share Button (triggers phone's native share modal directly) */}
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#5B8DEF]/10 text-[#4874D6] hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
+          title="Partager directement avec les applications du téléphone"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>Partager</span>
+        </button>
 
         {/* PDF Export */}
         <button

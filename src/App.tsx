@@ -17,7 +17,9 @@ import {
   sampleRevisionSheet,
 } from './services/db';
 import { generateRevisionSheet, fetchDynamicSteps } from './services/gemini';
+import { decodeSharedSheet } from './services/share';
 import { AlertCircle } from 'lucide-react';
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageRoute>('landing');
@@ -32,7 +34,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // Load sheets from local IndexedDB on mount
+  // Load sheets from local IndexedDB on mount and check for shared sheet link
   useEffect(() => {
     async function loadData() {
       try {
@@ -40,6 +42,23 @@ export default function App() {
         setSavedSheets(loaded);
       } catch (err) {
         console.error('Erreur chargement IndexedDB:', err);
+      }
+
+      // Check for incoming shared sheet link: ?shared=...
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedParam = urlParams.get('shared');
+        if (sharedParam) {
+          const decoded = decodeSharedSheet(sharedParam);
+          if (decoded) {
+            setCurrentSheet(decoded);
+            setCurrentPage('result');
+            // Clean URL query without reloading page
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }
+      } catch (e) {
+        console.warn('Erreur décodage lien partagé:', e);
       }
     }
     loadData();
@@ -222,6 +241,9 @@ export default function App() {
 
       {/* Footer */}
       {currentPage !== 'generating' && <Footer onNavigate={setCurrentPage} />}
+
+      {/* PWA Offline indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

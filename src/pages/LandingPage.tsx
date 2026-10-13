@@ -10,10 +10,9 @@ import {
   Download,
   ShieldCheck,
   Eye,
-  Sparkles,
-  BookMarked,
-  ArrowRightCircle,
   FileText,
+  Printer,
+  ChevronRight,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -22,17 +21,10 @@ interface LandingPageProps {
 }
 
 // 3 realistic subject samples for the showcase
-const SHOWCASE_SAMPLES: Record<string, { label: string; sheet: RevisionSheet; notebookSnippets: string[] }> = {
+const SHOWCASE_SAMPLES: Record<string, { label: string; sheet: RevisionSheet }> = {
   histoire: {
     label: 'Histoire (3e)',
     sheet: sampleRevisionSheet,
-    notebookSnippets: [
-      '28 juin 1914 : Sarajevo (archiduc assassiné)',
-      '1915-1917 : Tranchées, boue, rats, gaz',
-      'Verdun 1916 : 300 000 morts, enfer des Poilus',
-      'Déf : Guerre totale = armée + civils + usines mobilisés',
-      '11 nov 1918 : Armistice à Rethondes',
-    ],
   },
   svt: {
     label: 'SVT (3e)',
@@ -93,13 +85,6 @@ const SHOWCASE_SAMPLES: Record<string, { label: string; sheet: RevisionSheet; no
       essentialTakeaway:
         'Retenir la différence entre gène (la fonction) et allèle (la version), ainsi que les 23 paires de chromosomes.',
     },
-    notebookSnippets: [
-      'Noyau -> Chromosomes -> ADN -> Gènes',
-      '23 paires = 46 chro (22 autosomes + XX ou XY)',
-      'Gène = morceau d’ADN qui donne un caractère',
-      'Allèles = différentes versions du gène (A, B, O)',
-      'ATTENTION : un allèle récessif peut être caché !',
-    ],
   },
   maths: {
     label: 'Mathématiques (3e)',
@@ -156,13 +141,6 @@ const SHOWCASE_SAMPLES: Record<string, { label: string; sheet: RevisionSheet; no
       essentialTakeaway:
         'Le théorème calcule une longueur manquante ; la réciproque sert à prouver qu’un angle est droit.',
     },
-    notebookSnippets: [
-      'Triangle ABC rectangle en A -> BC² = AB² + AC²',
-      'Hypoténuse = face à angle droit (le + grand)',
-      'Ex : AB=3, AC=4 -> BC² = 9 + 16 = 25 -> BC = 5',
-      'ATTENTION rédiger : « Dans le triangle ABC rectangle en A... »',
-      'Réciproque sert à PROUVER que triangle est rectangle',
-    ],
   },
 };
 
@@ -282,116 +260,85 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Redesigned Showcase Section: "À quoi ressemble une fiche Quilo ?" */}
+      {/* Exemplary Showcase Section: "À quoi ressemble une fiche Quilo ?" */}
       <section className="max-w-4xl mx-auto px-4">
-        <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-6 sm:p-8 shadow-xs">
-          {/* Header of the Showcase */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#E1E7F0]">
-            <div>
-              <h2 className="font-heading font-bold text-2xl text-[#1E2A3A]">
-                À quoi ressemble une fiche Quilo ?
-              </h2>
-              <p className="text-xs sm:text-sm text-[#4B5A70] mt-1 max-w-xl">
-                Comparez les notes manuscrites brutes de l’élève avec la fiche de synthèse compacte générée par Quilo.
-              </p>
-            </div>
+        {/* Section Heading & Subtitle */}
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#1E2A3A]">
+            À quoi ressemble une fiche Quilo ?
+          </h2>
+          <p className="text-xs sm:text-sm text-[#4B5A70] mt-2 leading-relaxed">
+            Une seule page compacte, claire et aérée, synthétisant l'essentiel de vos notes pour les révisions et le contrôle.
+          </p>
 
-            {/* Subject Selector Tabs */}
-            <div className="flex items-center gap-1.5 bg-[#F4F6FA] p-1 rounded-xl border border-[#E1E7F0] self-start md:self-auto">
-              {Object.entries(SHOWCASE_SAMPLES).map(([key, sample]) => (
+          {/* Segmented Subject Selector */}
+          <div className="mt-5 inline-flex items-center p-1 bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl shadow-2xs">
+            {Object.entries(SHOWCASE_SAMPLES).map(([key, sample]) => {
+              const isSelected = selectedSampleKey === key;
+              return (
                 <button
                   key={key}
                   onClick={() => setSelectedSampleKey(key)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-                    selectedSampleKey === key
-                      ? 'bg-[#FFFFFF] text-[#1E2A3A] font-semibold shadow-xs'
-                      : 'text-[#4B5A70] hover:text-[#1E2A3A]'
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#5B8DEF] text-white shadow-xs'
+                      : 'text-[#4B5A70] hover:text-[#1E2A3A] hover:bg-[#F4F6FA]'
                   }`}
                 >
                   {sample.label}
                 </button>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Clean Paper Surface Display */}
+        <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-5 sm:p-8 shadow-xs">
+          {/* Subtle Top Metadata & Quick Action */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-[#E1E7F0] text-xs text-[#4B5A70]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#4CAF7D]" />
+              <span className="font-semibold text-[#1E2A3A]">
+                Exemple réel : {currentSample.label}
+              </span>
+              <span className="text-[#E1E7F0]">•</span>
+              <span>Format 1 page A4 prêt à imprimer</span>
             </div>
+
+            <button
+              onClick={() => {
+                onSelectSheet(currentSample.sheet);
+                onNavigate('result');
+              }}
+              className="inline-flex items-center gap-1 text-[#4874D6] hover:text-[#5B8DEF] font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <span>Tester les exports avec cet exemple</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Interactive Before & After Visual Comparison */}
-          <div className="my-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Left: The Raw Student Notes (Simulation d'une page de cahier) */}
-            <div className="lg:col-span-4 bg-[#F8FAFC] border border-[#E1E7F0] rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-[#E1E7F0] mb-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#4B5A70] flex items-center gap-1.5">
-                    <BookMarked className="w-3.5 h-3.5 text-[#4874D6]" />
-                    Photos des notes brutes
-                  </span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#E1E7F0] rounded text-[#1E2A3A]">
-                    {currentSample.sheet.photoCount} pages
-                  </span>
-                </div>
+          {/* Natural Full-Width Document View (No cramped side-split or double-box nesting) */}
+          <RevisionSheetView sheet={currentSample.sheet} />
 
-                {/* Notebook simulation visual */}
-                <div className="bg-white border border-[#E1E7F0] rounded-lg p-4 shadow-2xs relative">
-                  {/* Notebook red margin line */}
-                  <div className="absolute top-0 bottom-0 left-6 w-px bg-red-200" />
-                  <div className="pl-4 space-y-2.5">
-                    <p className="text-xs font-semibold text-[#1E2A3A] pb-1 border-b border-dashed border-[#E1E7F0]">
-                      {currentSample.sheet.title}
-                    </p>
-                    {currentSample.notebookSnippets.map((snippet, idx) => (
-                      <p
-                        key={idx}
-                        className="text-[11px] text-[#4B5A70] leading-snug font-sans"
-                      >
-                        {snippet}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom tag */}
-              <div className="mt-4 pt-3 border-t border-[#E1E7F0] text-[11px] text-[#4B5A70] flex items-center justify-between">
-                <span>Notes éparpillées</span>
-                <span className="text-[#E8604C] font-semibold">Difficile à réviser</span>
-              </div>
+          {/* Bottom Context Bar */}
+          <div className="mt-6 pt-5 border-t border-[#E1E7F0] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#4B5A70]">
+            <div className="flex items-center gap-2">
+              <Printer className="w-4 h-4 text-[#5B8DEF]" />
+              <span>
+                Prêt pour l'impression ou le téléchargement en <strong>PDF</strong>, <strong>Image</strong> ou document <strong>Word</strong>.
+              </span>
             </div>
 
-            {/* Center transformation indicator */}
-            <div className="lg:col-span-8 flex flex-col">
-              <div className="flex items-center justify-between text-xs font-semibold text-[#1E2A3A] mb-2 px-1">
-                <span className="flex items-center gap-1.5 text-[#4874D6]">
-                  <FileText className="w-4 h-4" />
-                  <span>Fiche Quilo finale générée</span>
-                </span>
-                <span className="text-xs text-[#4CAF7D] font-medium bg-[#4CAF7D]/10 px-2 py-0.5 rounded">
-                  Format 1 page • Prête à imprimer
-                </span>
-              </div>
-
-              {/* The Rendered Sheet View */}
-              <div className="border border-[#E1E7F0] rounded-xl bg-white p-4 sm:p-6 shadow-2xs">
-                <RevisionSheetView sheet={currentSample.sheet} />
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Actions of the Showcase */}
-          <div className="pt-5 border-t border-[#E1E7F0] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-[#4B5A70]">
-              Cette fiche est immédiatement exportable en <strong className="text-[#1E2A3A]">PDF</strong>, <strong className="text-[#1E2A3A]">PNG</strong> ou document <strong className="text-[#1E2A3A]">Word</strong>.
-            </p>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => {
-                  onSelectSheet(currentSample.sheet);
-                  onNavigate('result');
-                }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-              >
-                <span>Tester les exports avec cet exemple</span>
-                <ArrowRightCircle className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                onSelectSheet(currentSample.sheet);
+                onNavigate('result');
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
+            >
+              <span>Ouvrir dans l'outil d'export</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>

@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PageRoute } from '../../types/revision';
 import { QuiloMascot } from '../../assets/QuiloMascot';
-import { ArrowUpRight } from 'lucide-react';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { PrivacyModal } from '../modals/PrivacyModal';
+import { LegalModal } from '../modals/LegalModal';
+import {
+  Smartphone,
+  Download,
+  Share,
+  PlusSquare,
+  X,
+  ShieldCheck,
+  FileText,
+  Sparkles,
+} from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (page: PageRoute) => void;
@@ -9,10 +21,69 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const currentYear = new Date().getFullYear();
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   return (
     <footer className="bg-[#FFFFFF] border-t border-[#E1E7F0] mt-auto no-print">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+        {/* PWA Installation Highlight Banner (Se masque automatiquement si déjà installé en mode autonome) */}
+        {!isInstalled && (
+          <div className="mb-10 p-5 sm:p-6 bg-gradient-to-r from-[#5B8DEF]/10 via-[#F4F6FA] to-[#FFC04D]/10 rounded-2xl border border-[#5B8DEF]/30 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-[#5B8DEF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#5B8DEF]/15 text-[#4874D6] text-[11px] font-bold mb-1">
+                    <Sparkles className="w-3 h-3 text-[#FFC04D]" />
+                    <span>Quilo en PWA est maintenant disponible !</span>
+                  </div>
+                  <h3 className="font-heading font-bold text-base sm:text-lg text-[#1E2A3A]">
+                    Installez Quilo sur votre écran d'accueil
+                  </h3>
+                  <p className="text-xs text-[#4B5A70] mt-0.5 max-w-xl leading-relaxed">
+                    Révisez vos fiches n'importe où, même hors-ligne sans connexion internet, et ouvrez l'application en 1 clic sans passer par le navigateur.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Button based on platform */}
+              <div className="self-start md:self-center shrink-0">
+                {isInstallable ? (
+                  <button
+                    onClick={install}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Installer l'app (1 clic)</span>
+                  </button>
+                ) : isIOS ? (
+                  <button
+                    onClick={() => setShowIOSGuide(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <Share className="w-4 h-4" />
+                    <span>Installer sur iPhone / iPad</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={install}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span>Installer l'application</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Footer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-[#E1E7F0]">
           {/* Brand Info (Cols 1-5) */}
@@ -68,7 +139,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </ul>
           </div>
 
-          {/* Legal & Privacy (Cols 9-12) */}
+          {/* Legal & Privacy as Modals (Cols 9-12) */}
           <div className="md:col-span-4 space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A3A] font-heading">
               Confidentialité & Légal
@@ -76,20 +147,20 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <ul className="space-y-2 text-xs">
               <li>
                 <button
-                  onClick={() => onNavigate('privacy')}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  onClick={() => setShowPrivacyModal(true)}
+                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
                 >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#4CAF7D]" />
                   <span>Politique de confidentialité (RGPD)</span>
-                  <ArrowUpRight className="w-3 h-3 opacity-60" />
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('legal')}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  onClick={() => setShowLegalModal(true)}
+                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
                 >
+                  <FileText className="w-3.5 h-3.5 text-[#5B8DEF]" />
                   <span>Mentions légales & Droit d'auteur</span>
-                  <ArrowUpRight className="w-3 h-3 opacity-60" />
                 </button>
               </li>
               <li className="text-[11px] text-[#4B5A70]/80 pt-1">
@@ -109,6 +180,90 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* iOS Guided Installation Modal */}
+      {showIOSGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2A3A]/50 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowIOSGuide(false)}
+        >
+          <div
+            className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <QuiloMascot size={32} />
+                <div>
+                  <h3 className="font-heading font-bold text-base text-[#1E2A3A]">
+                    Installer Quilo sur iOS
+                  </h3>
+                  <p className="text-[11px] text-[#4B5A70]">
+                    Accès direct et fonctionnement hors-ligne
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowIOSGuide(false)}
+                className="text-[#4B5A70] hover:text-[#1E2A3A] p-1 rounded-md transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 pt-1 text-xs text-[#1E2A3A]">
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
+                <Share className="w-4 h-4 text-[#5B8DEF] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">1. Appuyez sur « Partager »</span>
+                  <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                    L'icône carrée avec une flèche vers le haut dans la barre Safari.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
+                <PlusSquare className="w-4 h-4 text-[#5B8DEF] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">2. Choisissez « Sur l'écran d'accueil »</span>
+                  <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                    Faites défiler le menu d'actions vers le bas.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
+                <Smartphone className="w-4 h-4 text-[#4CAF7D] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">3. Validez avec « Ajouter »</span>
+                  <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                    L'icône Quilo apparaîtra directement sur votre écran d'accueil.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIOSGuide(false)}
+              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              C'est compris
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      <PrivacyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
+
+      {/* Legal & Copyright Modal */}
+      <LegalModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+      />
     </footer>
   );
 };
