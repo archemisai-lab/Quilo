@@ -1,31 +1,49 @@
 {
-  "id": "/",
+  "id": "/?v=2",
   "name": "Quilo — Fiches de Révision",
   "short_name": "Quilo",
   "description": "Transforme tes photos de cours en fiches de révision claires, visuelles et compactes pour collégiens et lycéens.",
-  "start_url": "/",
+  "start_url": "/?v=2",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#F2F3F5",
+  "background_color": "#F0F2F5",
   "theme_color": "#5B8DEF",
   "lang": "fr-FR",
   "categories": ["education", "productivity"],
   "icons": [
     {
-      "src": "/pwa-192x192.png",
+      "src": "/quilo-app-icon-192.png?v=2",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512x512.png",
+      "src": "/quilo-app-icon-512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-maskable-512x512.png",
+      "src": "/quilo-app-icon-maskable.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-192x192.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

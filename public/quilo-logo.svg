@@ -1,34 +1,34 @@
 <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Clean soft background matching the uploaded logo -->
+  <rect width="512" height="512" fill="#F0F2F5"/>
+
   <!-- Antenna -->
   <g id="antenna">
-    <!-- Blue vertical antenna stem -->
-    <rect x="245" y="122" width="22" height="52" rx="11" fill="#4F81EE"/>
-    <!-- Yellow/Orange antenna sphere -->
-    <circle cx="256" cy="102" r="26" fill="#FDB241"/>
-    <!-- Highlight dot on antenna sphere -->
-    <circle cx="248" cy="94" r="8" fill="#FEE3B4"/>
+    <rect x="245" y="118" width="22" height="52" rx="11" fill="#4E81EE"/>
+    <circle cx="256" cy="98" r="26" fill="#FCAE3B"/>
+    <circle cx="247" cy="90" r="8" fill="#FFF0CE"/>
   </g>
 
   <!-- Feet (Darker blue) -->
   <g id="feet">
-    <rect x="194" y="370" width="42" height="34" rx="21" fill="#3D71DD"/>
-    <rect x="276" y="370" width="42" height="34" rx="21" fill="#3D71DD"/>
+    <rect x="194" y="372" width="42" height="34" rx="21" fill="#3C6FDA"/>
+    <rect x="276" y="372" width="42" height="34" rx="21" fill="#3C6FDA"/>
   </g>
 
   <!-- Left Arm / Nub -->
   <g id="left-arm">
-    <ellipse cx="140" cy="326" rx="36" ry="38" transform="rotate(-15 140 326)" fill="#4F81EE"/>
+    <ellipse cx="138" cy="326" rx="36" ry="38" transform="rotate(-15 138 326)" fill="#4E81EE"/>
   </g>
 
   <!-- Main Body Circle -->
-  <circle cx="256" cy="270" r="118" fill="#4F81EE"/>
+  <circle cx="256" cy="270" r="118" fill="#4E81EE"/>
 
   <!-- Center Eye / Camera Lens -->
   <g id="eye">
     <!-- Outer thick white circle -->
     <circle cx="250" cy="270" r="82" fill="#FFFFFF"/>
     <!-- Dark charcoal/navy inner circle -->
-    <circle cx="250" cy="270" r="65" fill="#1E2530"/>
+    <circle cx="250" cy="270" r="64" fill="#1C2430"/>
     <!-- Large white reflection -->
     <circle cx="228" cy="248" r="20" fill="#FFFFFF"/>
     <!-- Small white reflection -->
@@ -40,11 +40,11 @@
     <!-- White rounded paper card -->
     <rect x="296" y="210" width="102" height="136" rx="22" fill="#FFFFFF"/>
     <!-- 3 Dark rounded text lines on sheet -->
-    <rect x="330" y="246" width="56" height="9" rx="4.5" fill="#1E2530"/>
-    <rect x="326" y="268" width="66" height="9" rx="4.5" fill="#1E2530"/>
-    <rect x="322" y="290" width="50" height="9" rx="4.5" fill="#1E2530"/>
+    <rect x="330" y="246" width="56" height="9" rx="4.5" fill="#1C2430"/>
+    <rect x="326" y="268" width="66" height="9" rx="4.5" fill="#1C2430"/>
+    <rect x="322" y="290" width="50" height="9" rx="4.5" fill="#1C2430"/>
   </g>
 
   <!-- Right Hand (Floating blue circle) -->
-  <circle cx="404" cy="342" r="25" fill="#4F81EE"/>
+  <circle cx="404" cy="342" r="25" fill="#4E81EE"/>
 </svg>
