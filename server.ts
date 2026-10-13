@@ -203,17 +203,43 @@ Ne génère rien d'autre que du JSON.`;
 Matière : "${cleanSubject || 'Général'}"
 Consigne de l'élève : "${cleanPrompt || 'Notions clés'}"`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: userContent,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        temperature: 0.2,
-      },
-    });
+    const FALLBACK_MODELS = [
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3-flash-preview',
+    ];
 
-    const clean = (response.text || '')
+    let stepsResponseText = '';
+
+    for (const model of FALLBACK_MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: userContent,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        });
+        if (response.text && response.text.trim().length > 0) {
+          stepsResponseText = response.text;
+          break;
+        }
+      } catch (err: any) {
+        console.error(`[API generate-steps Error on ${model}]:`, err?.message || err?.status || err?.code || 'failed');
+      }
+    }
+
+    if (!stepsResponseText) {
+      console.error('[API generate-steps] Tous les 4 modèles de fallback ont échoué.');
+      return res.status(500).json({
+        error: "Erreur serveur : les 4 modèles d'initialisation (gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-3-flash-preview) ont échoué.",
+      });
+    }
+
+    const clean = stepsResponseText
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
       .replace(/\s*```$/i, '')
@@ -386,34 +412,37 @@ Consigne pédagogique de l'élève : ${cleanPrompt || 'Toutes les notions, défi
     contents.push({ text: userPromptText });
 
     let responseText = '';
-    try {
-      const result = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      });
-      responseText = result.text || '';
-    } catch (modelErr: any) {
-      console.warn('[Gemini 3.8 Fallback]', modelErr?.status || modelErr?.code || 'attempting 3.5');
-      const fallbackResult = await ai.models.generateContent({
-        model: 'gemini-3.5-flash-lite',
-        contents,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      });
-      responseText = fallbackResult.text || '';
+    const FALLBACK_MODELS = [
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3-flash-preview',
+    ];
+
+    for (const model of FALLBACK_MODELS) {
+      try {
+        const result = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        });
+        if (result.text && result.text.trim().length > 0) {
+          responseText = result.text;
+          break;
+        }
+      } catch (modelErr: any) {
+        console.error(`[API generate Error on ${model}]:`, modelErr?.message || modelErr?.status || modelErr?.code || 'failed');
+      }
     }
 
     if (!responseText || responseText.trim().length === 0) {
+      console.error('[API generate] Les 4 modèles ont échoué.');
       return res.status(502).json({
-        error: "Le modèle d'IA n'a produit aucun résultat. Veuillez vérifier la netteté de vos photos.",
+        error: "Erreur serveur : l'analyse a échoué sur l'ensemble de la chaîne de modèles (gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-3-flash-preview). Veuillez réessayer ultérieurement.",
       });
     }
 
