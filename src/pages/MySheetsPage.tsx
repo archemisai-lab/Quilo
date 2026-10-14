@@ -3,6 +3,7 @@ import { PageRoute, RevisionSheet } from '../types/revision';
 import { QuiloMascot } from '../assets/QuiloMascot';
 import { deleteSheet } from '../services/db';
 import { exportToPDF } from '../services/exporters';
+import { useAuth } from '../contexts/AuthContext';
 import {
   BookOpen,
   PlusCircle,
@@ -10,10 +11,14 @@ import {
   Trash2,
   FileText,
   Eye,
-  HardDrive,
+  Cloud,
+  Share2,
+  Lock,
+  Globe,
   AlertTriangle,
   X,
   Loader2,
+  LogIn,
 } from 'lucide-react';
 
 interface MySheetsPageProps {
@@ -29,6 +34,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
   onRefreshSheets,
   onNavigate,
 }) => {
+  const { user } = useAuth();
   const [sheetToDelete, setSheetToDelete] = useState<RevisionSheet | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -58,13 +64,13 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-heading font-bold text-2xl sm:text-3xl text-[#1E2A3A]">
             Mes fiches de révision
           </h1>
           <p className="text-xs sm:text-sm text-[#4B5A70] mt-1">
-            Enregistrées directement sur cet appareil ({sheets.length} fiche{sheets.length > 1 ? 's' : ''})
+            Sauvegardées sur votre compte Cloud ({sheets.length} fiche{sheets.length > 1 ? 's' : ''})
           </p>
         </div>
 
@@ -77,18 +83,43 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
         </button>
       </div>
 
-      {/* Device storage notice */}
-      <div className="mb-6 p-3.5 bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl flex items-start gap-3 text-xs text-[#4B5A70]">
-        <HardDrive className="w-4 h-4 text-[#385DE8] shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-[#1E2A3A]">Stockage navigateur privé (IndexedDB) : </span>
-          Ces fiches sont accessibles hors-connexion sur cet appareil. Elles ne sont partagées sur aucun serveur. Pensez à les exporter en PDF ou Word si vous devez changer d’ordinateur ou de téléphone.
+      {/* Cloud Sync Status / Auth Banner */}
+      {user ? (
+        <div className="mb-6 p-3.5 bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl flex items-center justify-between gap-3 text-xs text-[#4B5A70] shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#75D6B0]/15 text-[#385DE8] flex items-center justify-center shrink-0">
+              <Cloud className="w-4 h-4 text-[#75D6B0]" />
+            </div>
+            <div>
+              <span className="font-semibold text-[#1E2A3A]">Synchronisation Firebase active : </span>
+              Connecté en tant que <strong className="text-[#385DE8]">{user.displayName || user.email}</strong>. Vos fiches sont synchronisées sur tous vos appareils.
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mb-6 p-4 bg-[#FFF9EC] border border-[#FFC04D]/50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#1E2A3A]">
+          <div className="flex items-start gap-2.5">
+            <Cloud className="w-4 h-4 text-[#FFC04D] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-[#B37400]">Vous n’êtes pas connecté</p>
+              <p className="text-[#4B5A70] text-[11px] mt-0.5">
+                Créez un compte ou connectez-vous pour que vos fiches soient sauvegardées en ligne et synchronisées.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('login')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Se connecter</span>
+          </button>
+        </div>
+      )}
 
       {/* Empty State */}
       {sheets.length === 0 ? (
-        <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-10 text-center max-w-md mx-auto my-12">
+        <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-10 text-center max-w-md mx-auto my-12 shadow-xs">
           <div className="mb-4 flex justify-center">
             <QuiloMascot size={90} />
           </div>
@@ -100,7 +131,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
           </p>
           <button
             onClick={() => onNavigate('upload')}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer shadow-2xs"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Créer ma première fiche</span>
@@ -119,11 +150,19 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
               className="bg-[#FFFFFF] border border-[#E1E7F0] hover:border-[#5B8DEF]/60 rounded-xl p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer group"
             >
               <div>
-                {/* Subject tag and date */}
+                {/* Subject tag, sharing badge, and date */}
                 <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="px-2 py-0.5 bg-[#5B8DEF]/10 text-[#385DE8] font-semibold text-[11px] rounded-md">
-                    {sheet.subject}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 bg-[#5B8DEF]/10 text-[#385DE8] font-semibold text-[11px] rounded-md">
+                      {sheet.subject}
+                    </span>
+                    {sheet.isShared && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#75D6B0]/15 text-[#1E2A3A] font-medium text-[10px] rounded-md" title="Fiche partagée publiquement">
+                        <Globe className="w-2.5 h-2.5 text-[#75D6B0]" />
+                        <span>Partagée</span>
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[#4B5A70] flex items-center gap-1 text-[11px]">
                     <Calendar className="w-3 h-3" />
                     {new Date(sheet.createdAt).toLocaleDateString('fr-FR')}
@@ -164,7 +203,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
                       setSheetToDelete(sheet);
                     }}
                     className="p-1.5 text-[#4B5A70] hover:text-[#E8604C] hover:bg-[#FFF0EE] rounded-md transition-colors cursor-pointer"
-                    title="Supprimer la fiche de l'appareil"
+                    title="Supprimer la fiche"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -214,7 +253,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
 
             {/* Modal Body */}
             <p className="text-xs text-[#4B5A70] leading-relaxed">
-              Êtes-vous sûr de vouloir supprimer définitivement cette fiche de votre appareil ? Cette action est irréversible et supprimera la fiche de votre mémoire locale (IndexedDB).
+              Êtes-vous sûr de vouloir supprimer définitivement cette fiche ? Cette action est irréversible et supprimera la fiche de votre compte Cloud Firebase.
             </p>
 
             {/* Modal Actions */}
@@ -238,7 +277,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
                 ) : (
                   <Trash2 className="w-3.5 h-3.5" />
                 )}
-                <span>Supprimer définitivement</span>
+                <span>Supprimer</span>
               </button>
             </div>
           </div>

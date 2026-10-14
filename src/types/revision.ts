@@ -15,9 +15,12 @@ export interface SectionBlock {
 
 export interface RevisionSheet {
   id: string;
+  userId?: string;
+  authorName?: string;
   title: string;
   subject: string;
   createdAt: string;
+  updatedAt?: string;
   promptUsed: string;
   photoCount: number;
   thumbnail?: string; // Base64 compressed preview
@@ -26,6 +29,18 @@ export interface RevisionSheet {
   keyItems: KeyItem[]; // Dates, Formules, Repères clés
   sections: SectionBlock[];
   essentialTakeaway: string; // "L'essentiel pour le contrôle"
+  isShared?: boolean;
+  shareSlug?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  schoolGrade?: string;
+  createdAt: string;
+  updatedAt?: string;
+  photoUrl?: string;
 }
 
 export interface UploadedPhoto {
@@ -45,4 +60,9 @@ export type PageRoute =
   | 'result'
   | 'my-sheets'
   | 'legal'
-  | 'privacy';
+  | 'privacy'
+  | 'login'
+  | 'register'
+  | 'forgot-password'
+  | 'profile'
+  | 'shared-sheet';

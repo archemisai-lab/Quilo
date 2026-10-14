@@ -1,32 +1,11 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { RevisionSheet } from '../types/revision';
-
-interface QuiloDB extends DBSchema {
-  sheets: {
-    key: string;
-    value: RevisionSheet;
-    indexes: { 'by-date': string };
-  };
-}
-
-const DB_NAME = 'quilo_sheets_db';
-const DB_VERSION = 1;
-
-let dbPromise: Promise<IDBPDatabase<QuiloDB>> | null = null;
-
-function getDB() {
-  if (!dbPromise) {
-    dbPromise = openDB<QuiloDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('sheets')) {
-          const store = db.createObjectStore('sheets', { keyPath: 'id' });
-          store.createIndex('by-date', 'createdAt');
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
+import {
+  getUserSheets,
+  getSheetById as getSheetFromFs,
+  saveSheetToFirestore,
+  deleteSheetFromFirestore,
+} from './sheetsFirestore';
+import { auth } from './firebase';
 
 export const sampleRevisionSheet: RevisionSheet = {
   id: 'exemple-ww1',
@@ -108,45 +87,31 @@ export const sampleRevisionSheet: RevisionSheet = {
     'Retenir les 3 phases de la guerre, la définition de "guerre totale" et les dates de Verdun (1916) et de l’armistice (11 nov. 1918).',
 };
 
-export async function getAllSheets(): Promise<RevisionSheet[]> {
-  const db = await getDB();
-  const sheets = await db.getAllFromIndex('sheets', 'by-date');
-  // Return reversed to get most recent first
-  return sheets.reverse();
+/**
+ * All data storage now runs exclusively via Firebase Cloud Firestore.
+ * IndexedDB has been completely removed.
+ */
+export async function getAllSheets(currentUserId?: string): Promise<RevisionSheet[]> {
+  const uid = currentUserId || auth.currentUser?.uid;
+  if (!uid) {
+    return [];
+  }
+  return getUserSheets(uid);
 }
 
 export async function getSheetById(id: string): Promise<RevisionSheet | undefined> {
-  const db = await getDB();
-  return db.get('sheets', id);
+  const result = await getSheetFromFs(id);
+  return result || undefined;
 }
 
-export async function saveSheet(sheet: RevisionSheet): Promise<void> {
-  const db = await getDB();
-  await db.put('sheets', sheet);
+export async function saveSheet(sheet: RevisionSheet, currentUserId?: string): Promise<void> {
+  const uid = currentUserId || auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error('Vous devez être connecté pour enregistrer une fiche sur Firebase.');
+  }
+  await saveSheetToFirestore(sheet, uid, auth.currentUser?.displayName || undefined);
 }
 
 export async function deleteSheet(id: string): Promise<void> {
-  const db = await getDB();
-  await db.delete('sheets', id);
-}
-
-const SEEDED_KEY = 'quilo_initial_sample_seeded';
-
-export async function initStorageWithSampleIfEmpty(): Promise<RevisionSheet[]> {
-  const sheets = await getAllSheets();
-  const hasSeededBefore = localStorage.getItem(SEEDED_KEY) === 'true';
-
-  // Seed the WW1 example ONLY ONCE on the very first launch ever
-  if (!hasSeededBefore && sheets.length === 0) {
-    localStorage.setItem(SEEDED_KEY, 'true');
-    await saveSheet(sampleRevisionSheet);
-    return [sampleRevisionSheet];
-  }
-
-  // Ensure flag is set so it never respawns even if the user deletes all sheets
-  if (!hasSeededBefore) {
-    localStorage.setItem(SEEDED_KEY, 'true');
-  }
-
-  return sheets;
+  await deleteSheetFromFirestore(id);
 }

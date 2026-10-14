@@ -10,18 +10,27 @@ import { ResultPage } from './pages/ResultPage';
 import { MySheetsPage } from './pages/MySheetsPage';
 import { LegalPage } from './pages/LegalPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { SharedSheetPage } from './pages/SharedSheetPage';
+import { sampleRevisionSheet } from './services/db';
 import {
-  getAllSheets,
-  saveSheet,
-  initStorageWithSampleIfEmpty,
-  sampleRevisionSheet,
-} from './services/db';
+  subscribeToUserSheets,
+  saveSheetToFirestore,
+  getSheetById,
+} from './services/sheetsFirestore';
+import { migrateIndexedDBToFirestore } from './services/migration';
+import { testConnection } from './services/firebase';
 import { generateRevisionSheet, fetchDynamicSteps } from './services/gemini';
 import { decodeSharedSheet } from './services/share';
 import { AlertCircle } from 'lucide-react';
 import { OfflineIndicator } from './components/pwa/OfflineIndicator';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export default function App() {
+function AppContent() {
+  const { user, loading: authLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageRoute>('landing');
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [prompt, setPrompt] = useState<string>(
@@ -32,46 +41,56 @@ export default function App() {
   const [savedSheets, setSavedSheets] = useState<RevisionSheet[]>([]);
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sharedSheetId, setSharedSheetId] = useState<string | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // Load sheets from local IndexedDB on mount and check for shared sheet link
+  // Test Firebase connection on initial boot
   useEffect(() => {
-    async function loadData() {
-      try {
-        const loaded = await initStorageWithSampleIfEmpty();
-        setSavedSheets(loaded);
-      } catch (err) {
-        console.error('Erreur chargement IndexedDB:', err);
-      }
-
-      // Check for incoming shared sheet link: ?shared=...
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedParam = urlParams.get('shared');
-        if (sharedParam) {
-          const decoded = decodeSharedSheet(sharedParam);
-          if (decoded) {
-            setCurrentSheet(decoded);
-            setCurrentPage('result');
-            // Clean URL query without reloading page
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        }
-      } catch (e) {
-        console.warn('Erreur décodage lien partagé:', e);
-      }
-    }
-    loadData();
+    testConnection();
   }, []);
 
-  const refreshSheets = async () => {
-    try {
-      const refreshed = await getAllSheets();
-      setSavedSheets(refreshed);
-    } catch (err) {
-      console.error('Erreur rafraîchissement:', err);
+  // Handle URL parameters for shared sheets (?sheetId=... or ?shared=...)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const firestoreSheetId = urlParams.get('sheetId');
+    const sharedParam = urlParams.get('shared');
+
+    if (firestoreSheetId) {
+      setSharedSheetId(firestoreSheetId);
+      setCurrentPage('shared-sheet');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (sharedParam) {
+      const decoded = decodeSharedSheet(sharedParam);
+      if (decoded) {
+        setCurrentSheet(decoded);
+        setCurrentPage('result');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     }
-  };
+  }, []);
+
+  // Real-time synchronization of revision sheets with Firestore for logged-in user
+  // Also runs migration from legacy IndexedDB once on login
+  useEffect(() => {
+    if (!user) {
+      setSavedSheets([]);
+      return;
+    }
+
+    // Automatically migrate legacy IndexedDB sheets to Firebase Cloud
+    migrateIndexedDBToFirestore(user.uid).then((count) => {
+      if (count > 0) {
+        console.log(`${count} fiche(s) migrées depuis IndexedDB vers Firebase.`);
+      }
+    });
+
+    // Real-time subscription to user sheets in Cloud Firestore
+    const unsubscribe = subscribeToUserSheets(user.uid, (sheets) => {
+      setSavedSheets(sheets);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleStartGeneration = async () => {
     if (photos.length === 0) {
@@ -103,9 +122,10 @@ export default function App() {
         signal: controller.signal,
       });
 
-      // Save immediately into IndexedDB on the device
-      await saveSheet(newSheet);
-      await refreshSheets();
+      // If user is authenticated, save directly into Cloud Firestore
+      if (user) {
+        await saveSheetToFirestore(newSheet, user.uid, user.displayName || undefined);
+      }
 
       setCurrentSheet(newSheet);
       setCurrentPage('result');
@@ -145,42 +165,38 @@ export default function App() {
     setCurrentPage('upload');
   };
 
-  // Check if a sheet is already saved in IndexedDB (by id or content)
+  // Check if a sheet is already saved in My Sheets
   const isSheetInMySheets = (sheet: RevisionSheet | null | undefined): boolean => {
     if (!sheet) return false;
     return savedSheets.some((s) => {
       if (s.id && sheet.id && s.id === sheet.id) return true;
       const titleMatch = s.title?.trim().toLowerCase() === sheet.title?.trim().toLowerCase();
       const subjectMatch = s.subject?.trim().toLowerCase() === sheet.subject?.trim().toLowerCase();
-      if (titleMatch && subjectMatch) {
-        if (!s.summary && !sheet.summary) return true;
-        if (
-          s.summary &&
-          sheet.summary &&
-          s.summary.trim().slice(0, 40) === sheet.summary.trim().slice(0, 40)
-        ) {
-          return true;
-        }
-      }
-      return false;
+      return titleMatch && subjectMatch;
     });
   };
 
-  // Save a shared or external sheet to "Mes fiches"
+  // Save sheet to Firebase Cloud Firestore
   const handleSaveToMySheets = async (sheetToSave: RevisionSheet) => {
+    if (!user) {
+      // Prompt user to connect
+      setCurrentPage('login');
+      return;
+    }
+
     try {
       const sheetWithId: RevisionSheet = {
         ...sheetToSave,
         id: sheetToSave.id && !sheetToSave.id.startsWith('shared_')
           ? sheetToSave.id
           : `sheet_${Date.now()}`,
+        userId: user.uid,
         createdAt: sheetToSave.createdAt || new Date().toISOString(),
       };
-      await saveSheet(sheetWithId);
-      await refreshSheets();
+      await saveSheetToFirestore(sheetWithId, user.uid, user.displayName || undefined);
       setCurrentSheet(sheetWithId);
     } catch (err) {
-      console.error('Erreur sauvegarde dans mes fiches:', err);
+      console.error('Erreur sauvegarde dans Firebase:', err);
       throw err;
     }
   };
@@ -215,7 +231,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Page Content */}
+      {/* Main Page Routing */}
       <main className="flex-1">
         {currentPage === 'landing' && (
           <LandingPage
@@ -271,8 +287,37 @@ export default function App() {
             onSelectSheet={(sheet) => {
               setCurrentSheet(sheet);
             }}
-            onRefreshSheets={refreshSheets}
+            onRefreshSheets={() => {}}
             onNavigate={setCurrentPage}
+          />
+        )}
+
+        {currentPage === 'login' && (
+          <LoginPage onNavigate={setCurrentPage} />
+        )}
+
+        {currentPage === 'register' && (
+          <RegisterPage onNavigate={setCurrentPage} />
+        )}
+
+        {currentPage === 'forgot-password' && (
+          <ForgotPasswordPage onNavigate={setCurrentPage} />
+        )}
+
+        {currentPage === 'profile' && (
+          <ProfilePage
+            onNavigate={setCurrentPage}
+            savedSheetsCount={savedSheets.length}
+          />
+        )}
+
+        {currentPage === 'shared-sheet' && sharedSheetId && (
+          <SharedSheetPage
+            sheetId={sharedSheetId}
+            onNavigate={setCurrentPage}
+            onSelectSheet={(sheet) => {
+              setCurrentSheet(sheet);
+            }}
           />
         )}
 
@@ -287,5 +332,13 @@ export default function App() {
       {/* PWA Offline indicator */}
       <OfflineIndicator />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

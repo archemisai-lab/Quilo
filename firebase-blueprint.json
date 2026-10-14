@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "schoolGrade": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "email", "displayName", "createdAt"]
+    },
+    "RevisionSheet": {
+      "title": "RevisionSheet",
+      "description": "Revision sheet created by or shared with a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 200 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "promptUsed": { "type": "string", "maxLength": 1000 },
+        "photoCount": { "type": "number" },
+        "summary": { "type": "string", "maxLength": 5000 },
+        "essentialTakeaway": { "type": "string", "maxLength": 2000 },
+        "isShared": { "type": "boolean" },
+        "shareSlug": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "userId", "title", "subject", "createdAt", "summary", "isShared"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores private user account information accessible only by the user"
+    },
+    "/sheets/{sheetId}": {
+      "schema": { "$ref": "#/entities/RevisionSheet" },
+      "description": "Stores user revision sheets with private ownership and optional public link sharing"
+    }
+  }
+}

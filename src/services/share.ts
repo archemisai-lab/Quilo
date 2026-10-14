@@ -1,4 +1,5 @@
 import { RevisionSheet } from '../types/revision';
+import { setSheetSharing } from './sheetsFirestore';
 
 /**
  * Encodes a revision sheet into a URL-safe base64 string
@@ -60,6 +61,7 @@ export function decodeSharedSheet(encodedData: string): RevisionSheet | null {
       keyItems: obj.k || [],
       sections: obj.c || [],
       essentialTakeaway: obj.e || '',
+      isShared: true,
     };
   } catch (err) {
     console.warn('Impossible de décoder la fiche partagée:', err);
@@ -69,10 +71,16 @@ export function decodeSharedSheet(encodedData: string): RevisionSheet | null {
 
 /**
  * Generates the full shareable URL for a sheet
+ * Uses Firebase Cloud Firestore link when available
  */
 export function getShareUrl(sheet: RevisionSheet): string {
-  const encoded = encodeSheetForSharing(sheet);
   const origin = window.location.origin;
+  if (sheet.id && !sheet.id.startsWith('exemple-')) {
+    // Automatically enable sharing on Firebase in background
+    setSheetSharing(sheet.id, true).catch(() => {});
+    return `${origin}/?sheetId=${sheet.id}`;
+  }
+  const encoded = encodeSheetForSharing(sheet);
   return `${origin}/?shared=${encoded}`;
 }
 

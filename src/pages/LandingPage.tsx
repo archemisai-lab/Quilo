@@ -5,19 +5,18 @@ import { RevisionSheetView } from '../components/sheet/RevisionSheetView';
 import { sampleRevisionSheet } from '../services/db';
 import {
   ArrowRight,
-  Camera,
-  FileCheck2,
-  Download,
+  UserPlus,
+  LogIn,
   ShieldCheck,
-  Eye,
-  FileText,
+  FileCheck2,
+  Cloud,
   Printer,
-  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface LandingPageProps {
   onNavigate: (page: PageRoute) => void;
-  onSelectSheet: (sheet: RevisionSheet) => void;
+  onSelectSheet?: (sheet: RevisionSheet) => void;
 }
 
 // 3 realistic subject samples for the showcase
@@ -144,10 +143,7 @@ const SHOWCASE_SAMPLES: Record<string, { label: string; sheet: RevisionSheet }> 
   },
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({
-  onNavigate,
-  onSelectSheet,
-}) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   const [selectedSampleKey, setSelectedSampleKey] = useState<string>('histoire');
   const currentSample = SHOWCASE_SAMPLES[selectedSampleKey];
 
@@ -164,35 +160,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Heading in Baloo 2 */}
         <h1 className="font-heading font-bold text-3xl sm:text-5xl text-[#1E2A3A] tracking-tight leading-tight">
-          Transforme tes photos de cours en{' '}
-          <span className="text-[#5B8DEF]">fiche de révision</span> claire
+          Transformez vos cours en{' '}
+          <span className="text-[#5B8DEF]">fiches de révision</span> claires
         </h1>
 
         {/* Description in Inter */}
         <p className="mt-4 text-base sm:text-lg text-[#4B5A70] leading-relaxed max-w-2xl mx-auto">
-          Prends en photo les pages de ton cahier ou de ton manuel. Indique ce que tu veux retenir, et Quilo compile l’essentiel en une seule page compacte, prête à imprimer ou réviser.
+          Photographiez vos notes manuscrites ou vos manuels scolaires. Quilo synthétise l’essentiel en une seule page compacte, synchronisée sur votre compte et prête à imprimer.
         </p>
 
-        {/* Primary CTAs */}
+        {/* Primary CTAs - ONLY leads to login and register */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
-            onClick={() => onNavigate('upload')}
+            onClick={() => onNavigate('register')}
             className="group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-base rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
           >
-            <Camera className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
-            <span>Créer ma fiche maintenant</span>
+            <UserPlus className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
+            <span>Créer mon compte gratuit</span>
             <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform duration-200" />
           </button>
 
           <button
-            onClick={() => {
-              onSelectSheet(currentSample.sheet);
-              onNavigate('result');
-            }}
-            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:border-[#5B8DEF]/60 hover:bg-[#F8FAFC] text-[#1E2A3A] hover:text-[#385DE8] font-heading font-semibold text-sm rounded-xl shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-[0.98]"
+            onClick={() => onNavigate('login')}
+            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:border-[#5B8DEF]/60 hover:bg-[#F8FAFC] text-[#1E2A3A] hover:text-[#385DE8] font-heading font-semibold text-sm rounded-xl shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-[0.98]"
           >
-            <Eye className="w-4 h-4 text-[#385DE8] group-hover:scale-105 transition-transform duration-200" />
-            <span>Tester les exports avec cet exemple</span>
+            <LogIn className="w-4 h-4 text-[#385DE8] group-hover:scale-105 transition-transform duration-200" />
+            <span>Se connecter à mon compte</span>
           </button>
         </div>
 
@@ -200,14 +193,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-[#4B5A70]">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#75D6B0]" />
-            Sans inscription ni compte
+            Compte personnel & sécurisé
           </span>
           <span className="flex items-center gap-1.5">
-            <FileCheck2 className="w-4 h-4 text-[#5B8DEF]" />
-            Jusqu’à 13 photos par cours
+            <Cloud className="w-4 h-4 text-[#5B8DEF]" />
+            Sauvegarde & synchronisation Cloud
           </span>
           <span className="flex items-center gap-1.5">
-            <Download className="w-4 h-4 text-[#FFC04D]" />
+            <FileCheck2 className="w-4 h-4 text-[#FFC04D]" />
             Exports PDF, PNG & Word
           </span>
         </div>
@@ -217,7 +210,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="max-w-4xl mx-auto px-4">
         <div className="border-t border-[#E1E7F0] pt-12">
           <h2 className="font-heading font-bold text-2xl text-center text-[#1E2A3A] mb-8">
-            Comment ça marche ?
+            Comment fonctionne Quilo ?
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -226,10 +219,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 1
               </div>
               <h3 className="font-heading font-semibold text-lg text-[#1E2A3A]">
-                Photographiez vos cours
+                1. Connectez votre compte
               </h3>
               <p className="text-sm text-[#4B5A70] leading-relaxed">
-                Prenez jusqu’à 13 photos de vos notes manuscrites ou pages de manuel depuis votre smartphone ou ordinateur.
+                Créez votre compte en quelques secondes pour accéder à votre espace de révision sécurisé et synchronisé.
               </p>
             </div>
 
@@ -238,10 +231,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 2
               </div>
               <h3 className="font-heading font-semibold text-lg text-[#1E2A3A]">
-                Donnez votre consigne
+                2. Photographiez vos cours
               </h3>
               <p className="text-sm text-[#4B5A70] leading-relaxed">
-                Choisissez une consigne rapide (« Définitions », « Dates clés », « Formules ») ou écrivez exactement ce que vous voulez retenir.
+                Importez jusqu’à 13 photos de notes manuscrites ou de pages de manuel et précisez ce que vous souhaitez retenir.
               </p>
             </div>
 
@@ -250,10 +243,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 3
               </div>
               <h3 className="font-heading font-semibold text-lg text-[#1E2A3A]">
-                Récupérez votre fiche unique
+                3. Récupérez votre fiche
               </h3>
               <p className="text-sm text-[#4B5A70] leading-relaxed">
-                Une fiche structurée, claire et compacte en moins de 30 secondes, prête à être imprimée ou exportée en PDF, image ou Word.
+                Une fiche compacte en une page A4, automatiquement sauvegardée dans votre compte et exportable en PDF, Image ou Word.
               </p>
             </div>
           </div>
@@ -294,7 +287,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Clean Paper Surface Display */}
         <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-5 sm:p-8 shadow-xs">
-          {/* Subtle Top Metadata & Quick Action */}
+          {/* Subtle Top Metadata */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-[#E1E7F0] text-xs text-[#4B5A70]">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#75D6B0]" />
@@ -306,21 +299,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <button
-              onClick={() => {
-                onSelectSheet(currentSample.sheet);
-                onNavigate('result');
-              }}
+              onClick={() => onNavigate('register')}
               className="group inline-flex items-center gap-1.5 text-xs font-semibold text-[#385DE8] hover:text-[#5B8DEF] transition-colors self-start sm:self-auto cursor-pointer"
             >
-              <span>Tester les exports avec cet exemple</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-150" />
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Créer mon compte pour générer ma fiche</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-150" />
             </button>
           </div>
 
-          {/* Natural Full-Width Document View (No cramped side-split or double-box nesting) */}
+          {/* Natural Full-Width Document View */}
           <RevisionSheetView sheet={currentSample.sheet} />
 
-          {/* Bottom Context Bar */}
+          {/* Bottom Context Bar - Navigates only to signup or login */}
           <div className="mt-6 pt-5 border-t border-[#E1E7F0] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#4B5A70]">
             <div className="flex items-center gap-2">
               <Printer className="w-4 h-4 text-[#5B8DEF]" />
@@ -329,36 +320,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </span>
             </div>
 
-            <button
-              onClick={() => {
-                onSelectSheet(currentSample.sheet);
-                onNavigate('result');
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
-            >
-              <span>Ouvrir dans l'outil d'export</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => onNavigate('login')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#FFFFFF] border border-[#E1E7F0] hover:bg-[#F4F6FA] text-[#1E2A3A] font-heading font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5 text-[#385DE8]" />
+                <span>Connexion</span>
+              </button>
+              <button
+                onClick={() => onNavigate('register')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Créer un compte</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
+      {/* Bottom CTA Section - Exclusively leads to register and login */}
       <section className="text-center max-w-xl mx-auto px-4 pb-8">
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#5B8DEF]/10 text-[#385DE8] text-xs font-semibold mb-3">
+          <Sparkles className="w-3.5 h-3.5 text-[#FFC04D]" />
+          <span>Accès étudiant gratuit</span>
+        </div>
         <h2 className="font-heading font-bold text-2xl text-[#1E2A3A]">
           Prêt pour votre prochaine évaluation ?
         </h2>
         <p className="text-sm text-[#4B5A70] mt-2 mb-6">
-          Pas besoin de créer un compte. Vos fiches restent enregistrées directement sur votre appareil.
+          Créez votre compte gratuitement pour sauvegarder, synchroniser et exporter vos fiches de révision en toute sécurité.
         </p>
-        <button
-          onClick={() => onNavigate('upload')}
-          className="group inline-flex items-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-base rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
-        >
-          <Camera className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
-          <span>Commencer maintenant</span>
-          <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform duration-200" />
-        </button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={() => onNavigate('register')}
+            className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-base rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+          >
+            <UserPlus className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
+            <span>S'inscrire gratuitement</span>
+            <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform duration-200" />
+          </button>
+          <button
+            onClick={() => onNavigate('login')}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:bg-[#F8FAFC] text-[#1E2A3A] font-heading font-semibold text-sm rounded-xl shadow-2xs transition-all duration-200 cursor-pointer"
+          >
+            <LogIn className="w-4 h-4 text-[#385DE8]" />
+            <span>Déjà un compte ? Se connecter</span>
+          </button>
+        </div>
       </section>
     </div>
   );
