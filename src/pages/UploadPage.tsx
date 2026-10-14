@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { PageRoute, UploadedPhoto } from '../types/revision';
-import { Camera, Upload, Trash2, ArrowRight, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { Camera, Upload, Trash2, ArrowRight, AlertCircle, Info, Sparkles, ScanLine } from 'lucide-react';
 import { compressImage } from '../services/imageCompression';
+import { DocumentScannerModal } from '../components/scanner/DocumentScannerModal';
 
 interface UploadPageProps {
   photos: UploadedPhoto[];
@@ -19,6 +20,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleFiles = async (filesList: FileList | null) => {
@@ -76,6 +78,13 @@ export const UploadPage: React.FC<UploadPageProps> = ({
 
   const removePhoto = (id: string) => {
     onPhotosChange(photos.filter((p) => p.id !== id));
+    setErrorMessage(null);
+  };
+
+  const handleAddScannedPhotos = (newPhotos: UploadedPhoto[]) => {
+    const availableSlots = MAX_PHOTOS - photos.length;
+    const added = newPhotos.slice(0, availableSlots);
+    onPhotosChange([...photos, ...added]);
     setErrorMessage(null);
   };
 
@@ -154,7 +163,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({
       {/* Progress header */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs font-semibold text-[#4B5A70] mb-2">
-          <span className="text-[#4874D6]">Étape 1 sur 3 • Photos du cours</span>
+          <span className="text-[#385DE8]">Étape 1 sur 3 • Photos du cours</span>
           <span>
             {photos.length} / {MAX_PHOTOS} photos
           </span>
@@ -208,7 +217,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({
           onChange={(e) => handleFiles(e.target.files)}
         />
 
-        <div className="w-14 h-14 rounded-full bg-[#5B8DEF]/10 text-[#4874D6] mx-auto flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-full bg-[#5B8DEF]/10 text-[#385DE8] mx-auto flex items-center justify-center mb-4">
           <Camera className="w-7 h-7" />
         </div>
 
@@ -218,9 +227,36 @@ export const UploadPage: React.FC<UploadPageProps> = ({
         <p className="text-xs text-[#4B5A70] mt-1.5">
           Prenez une photo directe avec votre téléphone ou importez depuis vos fichiers
         </p>
-        <p className="text-xs font-medium text-[#4874D6] mt-3">
+        <p className="text-xs font-medium text-[#385DE8] mt-3">
           Jusqu'à {MAX_PHOTOS} photos au format JPG, PNG ou HEIC
         </p>
+      </div>
+
+      {/* Direct In-App Camera Scanner Action (Gauth style) */}
+      <div className="mt-4 p-4 sm:p-5 bg-[#FFFFFF] border border-[#E1E7F0] hover:border-[#5B8DEF]/60 rounded-xl transition-all shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#5B8DEF]/10 text-[#385DE8] flex items-center justify-center shrink-0">
+            <Camera className="w-5 h-5 stroke-[2]" />
+          </div>
+          <div>
+            <p className="font-heading font-semibold text-sm sm:text-base text-[#1E2A3A]">
+              Tu veux directement prendre ta photo ?
+            </p>
+            <p className="text-xs text-[#4B5A70] mt-0.5">
+              Scannez vos pages de cahier avec conseils de cadrage, lumière et barre de niveau.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsScannerOpen(true)}
+          disabled={photos.length >= MAX_PHOTOS}
+          className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm rounded-lg shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        >
+          <ScanLine className="w-4 h-4 group-hover:scale-105 transition-transform duration-200" />
+          <span>Prendre en photo</span>
+        </button>
       </div>
 
       {/* Quality recommendations tip */}
@@ -238,7 +274,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({
           <button
             onClick={loadDemoPhotos}
             disabled={isProcessing}
-            className="text-xs text-[#4874D6] hover:text-[#5B8DEF] font-medium inline-flex items-center gap-1.5 cursor-pointer underline underline-offset-2"
+            className="text-xs text-[#385DE8] hover:text-[#5B8DEF] font-medium inline-flex items-center gap-1.5 cursor-pointer underline underline-offset-2"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#FFC04D]" />
             <span>Pas de photo sous la main ? Charger une page de test</span>
@@ -299,13 +335,26 @@ export const UploadPage: React.FC<UploadPageProps> = ({
 
             {/* Add more photo card if slots available */}
             {photos.length < MAX_PHOTOS && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-[#E1E7F0] hover:border-[#5B8DEF] rounded-xl aspect-3/4 flex flex-col items-center justify-center gap-1.5 text-[#4B5A70] hover:text-[#4874D6] transition-colors bg-white/50 cursor-pointer"
-              >
-                <Upload className="w-5 h-5" />
-                <span className="text-xs font-medium">+ Ajouter</span>
-              </button>
+              <div className="border-2 border-dashed border-[#E1E7F0] hover:border-[#5B8DEF] rounded-xl aspect-3/4 flex flex-col items-center justify-center p-3 gap-2 bg-white/50 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-[#5B8DEF]/10 hover:bg-[#5B8DEF]/20 text-[#385DE8] text-xs font-semibold transition-colors cursor-pointer"
+                  title="Scanner une page de cahier"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border border-[#E1E7F0] hover:bg-[#F4F6FA] text-[#4B5A70] hover:text-[#1E2A3A] text-xs font-medium transition-colors cursor-pointer"
+                  title="Importer depuis vos fichiers"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Fichier</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -323,12 +372,21 @@ export const UploadPage: React.FC<UploadPageProps> = ({
         <button
           onClick={() => onNavigate('prompt')}
           disabled={photos.length === 0 || isProcessing}
-          className="flex items-center gap-2 px-6 py-3 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
         >
           <span>Continuer vers la consigne</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Live Document Scanner Modal */}
+      <DocumentScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onAddPhotos={handleAddScannedPhotos}
+        currentPhotoCount={photos.length}
+        maxPhotos={MAX_PHOTOS}
+      />
     </div>
   );
 };

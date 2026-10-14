@@ -117,7 +117,7 @@ export const QuiloMascot: React.FC<QuiloMascotProps> = ({
             width="34"
             height="32"
             rx="17"
-            fill="#4874D6"
+            fill="#385DE8"
           />
           <rect
             x="174"
@@ -125,7 +125,7 @@ export const QuiloMascot: React.FC<QuiloMascotProps> = ({
             width="34"
             height="32"
             rx="17"
-            fill="#4874D6"
+            fill="#385DE8"
           />
         </g>
 
@@ -255,7 +255,7 @@ export const QuiloMascot: React.FC<QuiloMascotProps> = ({
 
         {/* Right Arm / Hand holding sheet (viewer's right) */}
         <g id="right-hand">
-          <circle cx="270" cy="216" r="18" fill="#4874D6" />
+          <circle cx="270" cy="216" r="18" fill="#385DE8" />
         </g>
       </svg>
     </div>

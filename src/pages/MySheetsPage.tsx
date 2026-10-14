@@ -70,7 +70,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
 
         <button
           onClick={() => onNavigate('upload')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Nouvelle fiche</span>
@@ -79,7 +79,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
 
       {/* Device storage notice */}
       <div className="mb-6 p-3.5 bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl flex items-start gap-3 text-xs text-[#4B5A70]">
-        <HardDrive className="w-4 h-4 text-[#4874D6] shrink-0 mt-0.5" />
+        <HardDrive className="w-4 h-4 text-[#385DE8] shrink-0 mt-0.5" />
         <div>
           <span className="font-semibold text-[#1E2A3A]">Stockage navigateur privé (IndexedDB) : </span>
           Ces fiches sont accessibles hors-connexion sur cet appareil. Elles ne sont partagées sur aucun serveur. Pensez à les exporter en PDF ou Word si vous devez changer d’ordinateur ou de téléphone.
@@ -100,7 +100,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
           </p>
           <button
             onClick={() => onNavigate('upload')}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Créer ma première fiche</span>
@@ -121,7 +121,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
               <div>
                 {/* Subject tag and date */}
                 <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="px-2 py-0.5 bg-[#5B8DEF]/10 text-[#4874D6] font-semibold text-[11px] rounded-md">
+                  <span className="px-2 py-0.5 bg-[#5B8DEF]/10 text-[#385DE8] font-semibold text-[11px] rounded-md">
                     {sheet.subject}
                   </span>
                   <span className="text-[#4B5A70] flex items-center gap-1 text-[11px]">
@@ -131,7 +131,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
                 </div>
 
                 {/* Title */}
-                <h3 className="font-heading font-bold text-base text-[#1E2A3A] group-hover:text-[#4874D6] transition-colors line-clamp-2">
+                <h3 className="font-heading font-bold text-base text-[#1E2A3A] group-hover:text-[#385DE8] transition-colors line-clamp-2">
                   {sheet.title}
                 </h3>
 
@@ -152,7 +152,7 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => handleQuickPdf(sheet, e)}
-                    className="p-1.5 text-[#4B5A70] hover:text-[#4874D6] hover:bg-[#F4F6FA] rounded-md transition-colors cursor-pointer"
+                    className="p-1.5 text-[#4B5A70] hover:text-[#385DE8] hover:bg-[#F4F6FA] rounded-md transition-colors cursor-pointer"
                     title="Export PDF direct"
                   >
                     <FileText className="w-4 h-4" />

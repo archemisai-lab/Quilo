@@ -60,7 +60,7 @@ export const PromptPage: React.FC<PromptPageProps> = ({
       {/* Progress header */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs font-semibold text-[#4B5A70] mb-2">
-          <span className="text-[#4874D6]">Étape 2 sur 3 • Consigne de révision</span>
+          <span className="text-[#385DE8]">Étape 2 sur 3 • Consigne de révision</span>
           <span>{photos.length} photo{photos.length > 1 ? 's' : ''} prête{photos.length > 1 ? 's' : ''}</span>
         </div>
         <div className="w-full h-1.5 bg-[#E1E7F0] rounded-full overflow-hidden">
@@ -116,7 +116,7 @@ export const PromptPage: React.FC<PromptPageProps> = ({
               onClick={() => handleChipClick(chip)}
               className={`px-3 py-1.5 text-xs rounded-lg border transition-all text-left cursor-pointer ${
                 prompt.includes(chip)
-                  ? 'border-[#5B8DEF] bg-[#5B8DEF]/10 text-[#4874D6] font-semibold'
+                  ? 'border-[#5B8DEF] bg-[#5B8DEF]/10 text-[#385DE8] font-semibold'
                   : 'border-[#E1E7F0] bg-white text-[#1E2A3A] hover:border-[#5B8DEF]/40'
               }`}
             >
@@ -159,7 +159,7 @@ export const PromptPage: React.FC<PromptPageProps> = ({
 
         <button
           onClick={onStartGeneration}
-          className="flex items-center gap-2 px-6 py-3 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-sm rounded-xl transition-colors shadow-xs cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-sm rounded-xl transition-colors shadow-xs cursor-pointer"
         >
           <span>Générer ma fiche</span>
           <ArrowRight className="w-4 h-4" />

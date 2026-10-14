@@ -21,7 +21,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
         {/* Modal Header */}
         <div className="p-5 sm:p-6 border-b border-[#E1E7F0] flex items-center justify-between gap-4 bg-white shrink-0">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#4CAF7D]/10 text-[#4CAF7D] text-xs font-semibold mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#75D6B0]/15 text-[#75D6B0] text-xs font-semibold mb-1">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Conformité RGPD & Protection des mineurs</span>
             </div>
@@ -47,7 +47,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
           {/* 1. Pas de compte */}
           <section className="space-y-1.5">
             <div className="flex items-center gap-2 text-[#1E2A3A]">
-              <UserCheck className="w-4 h-4 text-[#4874D6]" />
+              <UserCheck className="w-4 h-4 text-[#385DE8]" />
               <h3 className="font-heading font-semibold text-base">
                 1. Aucun compte utilisateur requis
               </h3>
@@ -60,7 +60,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
           {/* 2. Stockage 100% local */}
           <section className="space-y-1.5">
             <div className="flex items-center gap-2 text-[#1E2A3A]">
-              <HardDrive className="w-4 h-4 text-[#4874D6]" />
+              <HardDrive className="w-4 h-4 text-[#385DE8]" />
               <h3 className="font-heading font-semibold text-base">
                 2. Vos fiches restent sur votre appareil (IndexedDB)
               </h3>
@@ -76,7 +76,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
           {/* 3. Traitement éphémère */}
           <section className="space-y-1.5">
             <div className="flex items-center gap-2 text-[#1E2A3A]">
-              <EyeOff className="w-4 h-4 text-[#4874D6]" />
+              <EyeOff className="w-4 h-4 text-[#385DE8]" />
               <h3 className="font-heading font-semibold text-base">
                 3. Traitement éphémère des photos de cours
               </h3>
@@ -106,7 +106,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
               Pour toute question concernant la confidentialité ou le RGPD :{' '}
               <a
                 href="mailto:archemis.ai@gmail.com"
-                className="text-[#4874D6] hover:underline font-medium"
+                className="text-[#385DE8] hover:underline font-medium"
               >
                 archemis.ai@gmail.com
               </a>
@@ -118,7 +118,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
         <div className="p-4 bg-[#F8FAFC] border-t border-[#E1E7F0] flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Fermer
           </button>

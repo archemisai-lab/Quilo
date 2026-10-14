@@ -68,14 +68,14 @@ export const GeneratingPage: React.FC<GeneratingPageProps> = ({
               key={idx}
               className={`flex items-center gap-3 text-xs transition-all duration-200 ${
                 isDone
-                  ? 'text-[#4CAF7D] font-medium'
+                  ? 'text-[#75D6B0] font-medium'
                   : isCurrent
                   ? 'text-[#1E2A3A] font-semibold translate-x-0.5'
                   : 'text-[#4B5A70]/50'
               }`}
             >
               {isDone ? (
-                <CheckCircle2 className="w-4 h-4 text-[#4CAF7D] shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#75D6B0] shrink-0" />
               ) : isCurrent ? (
                 <div className="relative flex items-center justify-center shrink-0 w-4 h-4">
                   <Loader2 className="w-4 h-4 text-[#5B8DEF] animate-spin" />

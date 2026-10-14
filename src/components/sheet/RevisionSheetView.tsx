@@ -19,7 +19,7 @@ export const RevisionSheetView: React.FC<RevisionSheetViewProps> = ({
       {/* Top Meta Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-[#E1E7F0]">
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-[#5B8DEF]/10 text-[#4874D6] font-semibold text-xs tracking-wide uppercase rounded-md">
+          <span className="px-3 py-1 bg-[#5B8DEF]/10 text-[#385DE8] font-semibold text-xs tracking-wide uppercase rounded-md">
             {sheet.subject || 'Fiche de cours'}
           </span>
           <span className="text-xs text-[#4B5A70]">
@@ -81,7 +81,7 @@ export const RevisionSheetView: React.FC<RevisionSheetViewProps> = ({
         {sheet.definitions && sheet.definitions.length > 0 && (
           <div>
             <div className="flex items-center gap-2 pb-2 mb-4 border-b border-[#E1E7F0]">
-              <BookOpen className="w-4 h-4 text-[#4874D6]" />
+              <BookOpen className="w-4 h-4 text-[#385DE8]" />
               <h2 className="font-heading font-bold text-base text-[#1E2A3A]">
                 Définitions indispensables
               </h2>
@@ -89,7 +89,7 @@ export const RevisionSheetView: React.FC<RevisionSheetViewProps> = ({
             <dl className="space-y-3.5">
               {sheet.definitions.map((def, idx) => (
                 <div key={idx} className="text-sm">
-                  <dt className="font-semibold text-[#4874D6]">
+                  <dt className="font-semibold text-[#385DE8]">
                     {def.term}
                   </dt>
                   <dd className="text-[#1E2A3A] text-xs sm:text-sm mt-0.5 leading-relaxed">
@@ -105,7 +105,7 @@ export const RevisionSheetView: React.FC<RevisionSheetViewProps> = ({
         {sheet.keyItems && sheet.keyItems.length > 0 && (
           <div>
             <div className="flex items-center gap-2 pb-2 mb-4 border-b border-[#E1E7F0]">
-              <BookmarkCheck className="w-4 h-4 text-[#4874D6]" />
+              <BookmarkCheck className="w-4 h-4 text-[#385DE8]" />
               <h2 className="font-heading font-bold text-base text-[#1E2A3A]">
                 Repères & Formules clés
               </h2>
@@ -140,7 +140,7 @@ export const RevisionSheetView: React.FC<RevisionSheetViewProps> = ({
               <ul className="space-y-2">
                 {section.points.map((point, pIdx) => (
                   <li key={pIdx} className="text-sm text-[#1E2A3A] flex items-start gap-2 leading-relaxed">
-                    <span className="text-[#4874D6] font-bold select-none">•</span>
+                    <span className="text-[#385DE8] font-bold select-none">•</span>
                     <span>{point}</span>
                   </li>
                 ))}

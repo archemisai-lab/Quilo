@@ -2,14 +2,14 @@
 
 @theme {
   --color-quilo-blue: #5B8DEF;
-  --color-quilo-blue-dark: #4874D6;
+  --color-quilo-blue-dark: #385DE8;
   --color-quilo-yellow: #FFC04D;
   --color-quilo-dark: #1E2A3A;
   --color-quilo-secondary: #4B5A70;
   --color-quilo-bg: #F4F6FA;
   --color-quilo-card: #FFFFFF;
   --color-quilo-border: #E1E7F0;
-  --color-quilo-success: #4CAF7D;
+  --color-quilo-success: #75D6B0;
   --color-quilo-alert: #E8604C;
 
   --font-baloo: "Baloo 2", cursive, sans-serif;

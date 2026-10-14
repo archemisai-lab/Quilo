@@ -177,11 +177,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => onNavigate('upload')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-base rounded-xl transition-colors shadow-sm cursor-pointer"
+            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-base rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
           >
-            <Camera className="w-5 h-5" />
+            <Camera className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
             <span>Créer ma fiche maintenant</span>
-            <ArrowRight className="w-4 h-4 ml-1" />
+            <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform duration-200" />
           </button>
 
           <button
@@ -189,9 +189,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onSelectSheet(currentSample.sheet);
               onNavigate('result');
             }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:bg-[#F4F6FA] text-[#1E2A3A] font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer"
+            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:border-[#5B8DEF]/60 hover:bg-[#F8FAFC] text-[#1E2A3A] hover:text-[#385DE8] font-heading font-semibold text-sm rounded-xl shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-[0.98]"
           >
-            <Eye className="w-4 h-4 text-[#4874D6]" />
+            <Eye className="w-4 h-4 text-[#385DE8] group-hover:scale-105 transition-transform duration-200" />
             <span>Tester les exports avec cet exemple</span>
           </button>
         </div>
@@ -199,7 +199,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Trust Badges */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-[#4B5A70]">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#4CAF7D]" />
+            <ShieldCheck className="w-4 h-4 text-[#75D6B0]" />
             Sans inscription ni compte
           </span>
           <span className="flex items-center gap-1.5">
@@ -222,7 +222,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#5B8DEF]/10 text-[#4874D6] flex items-center justify-center font-heading font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#5B8DEF]/10 text-[#385DE8] flex items-center justify-center font-heading font-bold text-sm">
                 1
               </div>
               <h3 className="font-heading font-semibold text-lg text-[#1E2A3A]">
@@ -246,7 +246,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="space-y-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#4CAF7D]/15 text-[#4CAF7D] flex items-center justify-center font-heading font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#75D6B0]/15 text-[#75D6B0] flex items-center justify-center font-heading font-bold text-sm">
                 3
               </div>
               <h3 className="font-heading font-semibold text-lg text-[#1E2A3A]">
@@ -297,7 +297,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Subtle Top Metadata & Quick Action */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-[#E1E7F0] text-xs text-[#4B5A70]">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#4CAF7D]" />
+              <span className="w-2 h-2 rounded-full bg-[#75D6B0]" />
               <span className="font-semibold text-[#1E2A3A]">
                 Exemple réel : {currentSample.label}
               </span>
@@ -310,10 +310,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onSelectSheet(currentSample.sheet);
                 onNavigate('result');
               }}
-              className="inline-flex items-center gap-1 text-[#4874D6] hover:text-[#5B8DEF] font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+              className="group inline-flex items-center gap-1.5 text-xs font-semibold text-[#385DE8] hover:text-[#5B8DEF] transition-colors self-start sm:self-auto cursor-pointer"
             >
               <span>Tester les exports avec cet exemple</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-150" />
             </button>
           </div>
 
@@ -334,7 +334,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onSelectSheet(currentSample.sheet);
                 onNavigate('result');
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
             >
               <span>Ouvrir dans l'outil d'export</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -353,10 +353,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </p>
         <button
           onClick={() => onNavigate('upload')}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-base rounded-xl transition-colors cursor-pointer shadow-xs"
+          className="group inline-flex items-center gap-2 px-6 py-3.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-base rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
         >
-          <Camera className="w-5 h-5" />
+          <Camera className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
           <span>Commencer maintenant</span>
+          <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform duration-200" />
         </button>
       </section>
     </div>

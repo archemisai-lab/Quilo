@@ -11,7 +11,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onNavigate }) => {
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
       <button
         onClick={() => onNavigate('landing')}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4874D6] hover:text-[#5B8DEF] mb-6 cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#385DE8] hover:text-[#5B8DEF] mb-6 cursor-pointer"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Retour à l'accueil</span>
@@ -38,7 +38,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onNavigate }) => {
             Contact éditeur :{' '}
             <a
               href="mailto:archemis.ai@gmail.com"
-              className="text-[#4874D6] hover:underline font-medium"
+              className="text-[#385DE8] hover:underline font-medium"
             >
               archemis.ai@gmail.com
             </a>

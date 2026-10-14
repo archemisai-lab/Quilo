@@ -48,7 +48,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   <Smartphone className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#5B8DEF]/15 text-[#4874D6] text-[11px] font-bold mb-1">
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#5B8DEF]/15 text-[#385DE8] text-[11px] font-bold mb-1">
                     <Sparkles className="w-3 h-3 text-[#FFC04D]" />
                     <span>Quilo en PWA est maintenant disponible !</span>
                   </div>
@@ -66,7 +66,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 {isInstallable ? (
                   <button
                     onClick={install}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
                   >
                     <Download className="w-4 h-4" />
                     <span>Installer l'app (1 clic)</span>
@@ -74,7 +74,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 ) : isIOS ? (
                   <button
                     onClick={() => setShowIOSGuide(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
                   >
                     <Share className="w-4 h-4" />
                     <span>Installer sur iPhone / iPad</span>
@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 ) : (
                   <button
                     onClick={handleGenericInstall}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
                   >
                     <Smartphone className="w-4 h-4" />
                     <span>Installer l'application</span>
@@ -102,7 +102,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               className="flex items-center gap-2.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B8DEF] rounded-md transition-opacity cursor-pointer"
             >
               <QuiloMascot size={32} />
-              <span className="font-heading font-bold text-xl text-[#1E2A3A] group-hover:text-[#4874D6] transition-colors tracking-tight">
+              <span className="font-heading font-bold text-xl text-[#1E2A3A] group-hover:text-[#385DE8] transition-colors tracking-tight">
                 Quilo
               </span>
             </button>
@@ -110,7 +110,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               L'outil qui compile les photos de cours en une fiche de révision unique, visuelle et compacte. Pensé spécialement pour les collégiens et les lycéens.
             </p>
             <div className="pt-1 flex items-center gap-2 text-[11px] text-[#4B5A70]">
-              <span className="w-2 h-2 rounded-full bg-[#4CAF7D] inline-block shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-[#75D6B0] inline-block shrink-0" />
               <span>Stockage 100% privé sur votre navigateur (IndexedDB)</span>
             </div>
           </div>
@@ -124,7 +124,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li>
                 <button
                   onClick={() => onNavigate('upload')}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors cursor-pointer"
+                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
                 >
                   Créer une fiche de cours
                 </button>
@@ -132,7 +132,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li>
                 <button
                   onClick={() => onNavigate('my-sheets')}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors cursor-pointer"
+                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
                 >
                   Mes fiches enregistrées
                 </button>
@@ -140,7 +140,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li>
                 <button
                   onClick={() => onNavigate('landing')}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors cursor-pointer"
+                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
                 >
                   Accueil & Démonstration
                 </button>
@@ -157,16 +157,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li>
                 <button
                   onClick={() => setShowPrivacyModal(true)}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
+                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#4CAF7D]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#75D6B0]" />
                   <span>Politique de confidentialité (RGPD)</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setShowLegalModal(true)}
-                  className="text-[#4B5A70] hover:text-[#4874D6] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
+                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors inline-flex items-center gap-1.5 cursor-pointer text-left"
                 >
                   <FileText className="w-3.5 h-3.5 text-[#5B8DEF]" />
                   <span>Mentions légales & Droit d'auteur</span>
@@ -242,7 +242,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </div>
 
               <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
-                <Smartphone className="w-4 h-4 text-[#4CAF7D] shrink-0 mt-0.5" />
+                <Smartphone className="w-4 h-4 text-[#75D6B0] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold">3. Validez avec « Ajouter »</span>
                   <p className="text-[#4B5A70] text-[11px] mt-0.5">
@@ -254,7 +254,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => setShowIOSGuide(false)}
-              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
             >
               C'est compris
             </button>
@@ -304,7 +304,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </div>
 
               <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
-                <Download className="w-4 h-4 text-[#4CAF7D] shrink-0 mt-0.5" />
+                <Download className="w-4 h-4 text-[#75D6B0] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold">2. Ou via le menu du navigateur</span>
                   <p className="text-[#4B5A70] text-[11px] mt-0.5">
@@ -316,7 +316,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => setShowDesktopGuide(false)}
-              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
             >
               Fermer
             </button>

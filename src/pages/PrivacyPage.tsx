@@ -11,7 +11,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
       <button
         onClick={() => onNavigate('landing')}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4874D6] hover:text-[#5B8DEF] mb-6 cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#385DE8] hover:text-[#5B8DEF] mb-6 cursor-pointer"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Retour à l'accueil</span>
@@ -19,7 +19,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
 
       <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-6 sm:p-10 space-y-8">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#4CAF7D]/10 text-[#4CAF7D] text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#75D6B0]/15 text-[#75D6B0] text-xs font-semibold mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Conformité RGPD & Protection des mineurs</span>
           </div>
@@ -39,7 +39,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
         {/* 1. Pas de compte, pas de profil */}
         <section className="space-y-2">
           <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-[#4874D6]" />
+            <UserCheck className="w-4 h-4 text-[#385DE8]" />
             <h2 className="font-heading font-semibold text-lg text-[#1E2A3A]">
               1. Aucun compte utilisateur requis
             </h2>
@@ -52,7 +52,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
         {/* 2. Stockage 100% local sur l'appareil */}
         <section className="space-y-2">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-[#4874D6]" />
+            <HardDrive className="w-4 h-4 text-[#385DE8]" />
             <h2 className="font-heading font-semibold text-lg text-[#1E2A3A]">
               2. Vos fiches restent sur votre appareil (IndexedDB)
             </h2>
@@ -68,7 +68,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
         {/* 3. Traitement éphémère des photos de cours */}
         <section className="space-y-2">
           <div className="flex items-center gap-2">
-            <EyeOff className="w-4 h-4 text-[#4874D6]" />
+            <EyeOff className="w-4 h-4 text-[#385DE8]" />
             <h2 className="font-heading font-semibold text-lg text-[#1E2A3A]">
               3. Traitement éphémère des photos de cours
             </h2>
@@ -100,7 +100,7 @@ export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigate }) => {
             Pour toute question concernant la confidentialité ou le RGPD :{' '}
             <a
               href="mailto:archemis.ai@gmail.com"
-              className="text-[#4874D6] hover:underline font-medium"
+              className="text-[#385DE8] hover:underline font-medium"
             >
               archemis.ai@gmail.com
             </a>

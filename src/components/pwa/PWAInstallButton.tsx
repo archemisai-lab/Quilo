@@ -17,7 +17,7 @@ export const PWAInstallButton: React.FC = () => {
     return (
       <button
         onClick={install}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#4874D6] bg-[#5B8DEF]/10 hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#385DE8] bg-[#5B8DEF]/10 hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
         title="Ajouter Quilo à l'écran d'accueil"
       >
         <Smartphone className="w-3.5 h-3.5" />
@@ -32,7 +32,7 @@ export const PWAInstallButton: React.FC = () => {
       <>
         <button
           onClick={() => setShowIOSGuide(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#4874D6] bg-[#5B8DEF]/10 hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#385DE8] bg-[#5B8DEF]/10 hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
           title="Ajouter Quilo à l'écran d'accueil sur iPhone / iPad"
         >
           <Smartphone className="w-3.5 h-3.5" />
@@ -90,7 +90,7 @@ export const PWAInstallButton: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-2.5 p-2.5 bg-[#F4F6FA] rounded-xl border border-[#E1E7F0]">
-                  <Smartphone className="w-4 h-4 text-[#4CAF7D] shrink-0 mt-0.5" />
+                  <Smartphone className="w-4 h-4 text-[#75D6B0] shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold">3. Validez avec « Ajouter »</span>
                     <p className="text-[#4B5A70] text-[11px] mt-0.5">
@@ -102,7 +102,7 @@ export const PWAInstallButton: React.FC = () => {
 
               <button
                 onClick={() => setShowIOSGuide(false)}
-                className="w-full py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                className="w-full py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
               >
                 Compris
               </button>

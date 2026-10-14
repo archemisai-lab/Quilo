@@ -133,8 +133,8 @@ export const ExportBar: React.FC<ExportBarProps> = ({
         <div
           className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
             isActuallySaved
-              ? 'bg-[#4CAF7D]/10 text-[#4CAF7D]'
-              : 'bg-[#5B8DEF]/10 text-[#4874D6]'
+              ? 'bg-[#75D6B0]/15 text-[#75D6B0]'
+              : 'bg-[#5B8DEF]/10 text-[#385DE8]'
           }`}
         >
           {isActuallySaved ? (
@@ -160,7 +160,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
       {/* Export & Save Action Buttons */}
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
         {successMessage && (
-          <span className="text-xs font-medium text-[#4CAF7D] bg-[#4CAF7D]/10 px-2.5 py-1 rounded-md animate-fade-in">
+          <span className="text-xs font-medium text-[#75D6B0] bg-[#75D6B0]/15 px-2.5 py-1 rounded-md animate-fade-in">
             {successMessage}
           </span>
         )}
@@ -170,7 +170,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
           <button
             onClick={handleSaveToMySheets}
             disabled={isSaving}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#4CAF7D] text-white hover:bg-[#3FA06E] transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#75D6B0] text-white hover:bg-[#5EC49D] transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
             title="Enregistrer cette fiche dans votre espace Mes fiches"
           >
             {isSaving ? (
@@ -193,7 +193,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
         {/* Share Button (triggers phone's native share modal directly) */}
         <button
           onClick={handleShare}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#5B8DEF]/10 text-[#4874D6] hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#5B8DEF]/10 text-[#385DE8] hover:bg-[#5B8DEF]/20 transition-colors cursor-pointer"
           title="Partager directement avec les applications du téléphone"
         >
           <Share2 className="w-3.5 h-3.5" />
@@ -204,7 +204,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
         <button
           onClick={() => handleExport('pdf')}
           disabled={exportingType !== null}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#5B8DEF] text-white hover:bg-[#4874D6] transition-colors disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#5B8DEF] text-white hover:bg-[#385DE8] transition-colors disabled:opacity-50 cursor-pointer"
           title="Exporter la fiche au format PDF prêt à imprimer"
         >
           {exportingType === 'pdf' ? (

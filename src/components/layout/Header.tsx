@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label="Accueil Quilo"
         >
           <QuiloMascot size={28} />
-          <span className="font-heading font-bold text-lg text-[#1E2A3A] group-hover:text-[#4874D6] transition-colors tracking-tight">
+          <span className="font-heading font-bold text-lg text-[#1E2A3A] group-hover:text-[#385DE8] transition-colors tracking-tight">
             Quilo
           </span>
         </button>
@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-[#4B5A70] hover:text-[#1E2A3A] hover:bg-[#F4F6FA]'
             }`}
           >
-            <BookOpen className={`w-3.5 h-3.5 ${isMySheetsActive ? 'text-[#4874D6]' : 'text-[#4B5A70]'}`} />
+            <BookOpen className={`w-3.5 h-3.5 ${isMySheetsActive ? 'text-[#385DE8]' : 'text-[#4B5A70]'}`} />
             <span>Mes fiches</span>
             {savedCount > 0 && (
               <span
@@ -67,8 +67,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate('upload')}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[#5B8DEF] ${
               isCreationActive
-                ? 'bg-[#4874D6] text-white shadow-2xs'
-                : 'bg-[#5B8DEF] hover:bg-[#4874D6] text-white shadow-2xs active:scale-[0.98]'
+                ? 'bg-[#385DE8] text-white shadow-2xs'
+                : 'bg-[#5B8DEF] hover:bg-[#385DE8] text-white shadow-2xs active:scale-[0.98]'
             }`}
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />

@@ -43,7 +43,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
       <div className="flex items-center justify-between mb-6 no-print">
         <button
           onClick={onResetNewSheet}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4874D6] hover:text-[#5B8DEF] cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#385DE8] hover:text-[#5B8DEF] cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Créer une autre fiche</span>
@@ -62,11 +62,11 @@ export const ResultPage: React.FC<ResultPageProps> = ({
       {!isActuallySaved && onSaveToMySheets && (
         <div className="mb-6 p-4 sm:p-5 bg-[#FFFFFF] border border-[#E1E7F0] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print shadow-xs">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#5B8DEF]/10 text-[#4874D6] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-[#5B8DEF]/10 text-[#385DE8] flex items-center justify-center shrink-0">
               <BookmarkPlus className="w-5 h-5 stroke-[2]" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#5B8DEF]/10 text-[#4874D6] text-[11px] font-semibold mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#5B8DEF]/10 text-[#385DE8] text-[11px] font-semibold mb-1">
                 <span>Fiche partagée</span>
               </div>
               <h2 className="font-heading font-bold text-sm sm:text-base text-[#1E2A3A]">
@@ -81,7 +81,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#4CAF7D] hover:bg-[#3FA06E] text-white font-heading font-semibold text-xs sm:text-sm rounded-lg transition-colors shadow-2xs cursor-pointer shrink-0 active:scale-98 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#75D6B0] hover:bg-[#5EC49D] text-white font-heading font-semibold text-xs sm:text-sm rounded-lg transition-colors shadow-2xs cursor-pointer shrink-0 active:scale-98 disabled:opacity-50"
           >
             {isSaving ? (
               <>
@@ -102,7 +102,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
       {justSaved && (
         <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-[#166534] no-print">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-[#4CAF7D] text-white flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[#75D6B0] text-white flex items-center justify-center shrink-0">
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
             <span>
@@ -138,7 +138,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#4CAF7D] hover:bg-[#3FA06E] text-white font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer shadow-xs"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#75D6B0] hover:bg-[#5EC49D] text-white font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer shadow-xs"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -151,7 +151,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
 
         <button
           onClick={onResetNewSheet}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#4874D6] text-white font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Créer une nouvelle fiche de cours</span>
@@ -161,7 +161,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
           onClick={() => onNavigate('my-sheets')}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#FFFFFF] border border-[#E1E7F0] hover:bg-[#F4F6FA] text-[#1E2A3A] font-heading font-semibold text-sm rounded-xl transition-colors cursor-pointer"
         >
-          <BookOpen className="w-4 h-4 text-[#4874D6]" />
+          <BookOpen className="w-4 h-4 text-[#385DE8]" />
           <span>Accéder à mes fiches</span>
         </button>
       </div>

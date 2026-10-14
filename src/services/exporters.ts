@@ -119,13 +119,13 @@ function generateCanvasFromSheet(sheet: RevisionSheet, filename: string) {
 
   // Definitions
   if (sheet.definitions && sheet.definitions.length > 0) {
-    ctx.fillStyle = '#4874D6';
+    ctx.fillStyle = '#385DE8';
     ctx.font = 'bold 30px sans-serif';
     ctx.fillText('Définitions indispensables', 80, y);
     y += 50;
 
     sheet.definitions.slice(0, 5).forEach((def) => {
-      ctx.fillStyle = '#4874D6';
+      ctx.fillStyle = '#385DE8';
       ctx.font = 'bold 24px sans-serif';
       ctx.fillText(`• ${def.term} :`, 80, y);
       ctx.fillStyle = '#1E2A3A';
@@ -138,7 +138,7 @@ function generateCanvasFromSheet(sheet: RevisionSheet, filename: string) {
 
   // Key items
   if (sheet.keyItems && sheet.keyItems.length > 0) {
-    ctx.fillStyle = '#4874D6';
+    ctx.fillStyle = '#385DE8';
     ctx.font = 'bold 30px sans-serif';
     ctx.fillText('Repères & Dates clés', 80, y);
     y += 50;
@@ -308,7 +308,7 @@ export async function exportToPDF(sheet: RevisionSheet): Promise<void> {
     checkPageBreak(25);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(72, 116, 214); // #4874D6
+    doc.setTextColor(56, 93, 232); // #385DE8
     doc.text('REPÈRES & DATES CLÉS', margin, y);
     y += 6;
 
@@ -469,7 +469,7 @@ export async function exportToDOCX(sheet: RevisionSheet): Promise<void> {
       docParagraphs.push(
         new Paragraph({
           children: [
-            new TextRun({ text: `• ${def.term} : `, bold: true, color: '4874D6' }),
+            new TextRun({ text: `• ${def.term} : `, bold: true, color: '385DE8' }),
             new TextRun({ text: def.definition, color: '1E2A3A' }),
           ],
           spacing: { after: 80 },

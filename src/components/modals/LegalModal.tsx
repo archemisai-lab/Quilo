@@ -21,7 +21,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose }) => {
         {/* Modal Header */}
         <div className="p-5 sm:p-6 border-b border-[#E1E7F0] flex items-center justify-between gap-4 bg-white shrink-0">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#5B8DEF]/10 text-[#4874D6] text-xs font-semibold mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#5B8DEF]/10 text-[#385DE8] text-xs font-semibold mb-1">
               <BookOpen className="w-3.5 h-3.5" />
               <span>Informations légales & Droit d'auteur</span>
             </div>
@@ -52,7 +52,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose }) => {
               Contact éditeur :{' '}
               <a
                 href="mailto:archemis.ai@gmail.com"
-                className="text-[#4874D6] hover:underline font-medium"
+                className="text-[#385DE8] hover:underline font-medium"
               >
                 archemis.ai@gmail.com
               </a>
@@ -113,7 +113,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose }) => {
         <div className="p-4 bg-[#F8FAFC] border-t border-[#E1E7F0] flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[#5B8DEF] hover:bg-[#4874D6] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 bg-[#5B8DEF] hover:bg-[#385DE8] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Fermer
           </button>
