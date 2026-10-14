@@ -5,6 +5,7 @@ import { RevisionSheet } from '../types/revision';
  */
 export function encodeSheetForSharing(sheet: RevisionSheet): string {
   const compact = {
+    i: sheet.id,
     t: sheet.title,
     s: sheet.subject,
     u: sheet.summary,
@@ -48,7 +49,7 @@ export function decodeSharedSheet(encodedData: string): RevisionSheet | null {
     if (!obj || !obj.t) return null;
 
     return {
-      id: `shared_${Date.now()}`,
+      id: obj.i || `shared_${Date.now()}`,
       title: obj.t,
       subject: obj.s || 'Cours partagé',
       createdAt: new Date().toISOString(),

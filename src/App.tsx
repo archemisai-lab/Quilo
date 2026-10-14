@@ -145,6 +145,46 @@ export default function App() {
     setCurrentPage('upload');
   };
 
+  // Check if a sheet is already saved in IndexedDB (by id or content)
+  const isSheetInMySheets = (sheet: RevisionSheet | null | undefined): boolean => {
+    if (!sheet) return false;
+    return savedSheets.some((s) => {
+      if (s.id && sheet.id && s.id === sheet.id) return true;
+      const titleMatch = s.title?.trim().toLowerCase() === sheet.title?.trim().toLowerCase();
+      const subjectMatch = s.subject?.trim().toLowerCase() === sheet.subject?.trim().toLowerCase();
+      if (titleMatch && subjectMatch) {
+        if (!s.summary && !sheet.summary) return true;
+        if (
+          s.summary &&
+          sheet.summary &&
+          s.summary.trim().slice(0, 40) === sheet.summary.trim().slice(0, 40)
+        ) {
+          return true;
+        }
+      }
+      return false;
+    });
+  };
+
+  // Save a shared or external sheet to "Mes fiches"
+  const handleSaveToMySheets = async (sheetToSave: RevisionSheet) => {
+    try {
+      const sheetWithId: RevisionSheet = {
+        ...sheetToSave,
+        id: sheetToSave.id && !sheetToSave.id.startsWith('shared_')
+          ? sheetToSave.id
+          : `sheet_${Date.now()}`,
+        createdAt: sheetToSave.createdAt || new Date().toISOString(),
+      };
+      await saveSheet(sheetWithId);
+      await refreshSheets();
+      setCurrentSheet(sheetWithId);
+    } catch (err) {
+      console.error('Erreur sauvegarde dans mes fiches:', err);
+      throw err;
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F6FA] text-[#1E2A3A]">
       {/* Header (hidden during generation screen to keep focus) */}
@@ -220,6 +260,8 @@ export default function App() {
             sheet={currentSheet}
             onNavigate={setCurrentPage}
             onResetNewSheet={handleResetNewSheet}
+            isSaved={isSheetInMySheets(currentSheet)}
+            onSaveToMySheets={handleSaveToMySheets}
           />
         )}
 
