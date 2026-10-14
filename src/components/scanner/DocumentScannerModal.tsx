@@ -2,20 +2,19 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Camera,
   X,
-  RotateCcw,
   Zap,
   ZapOff,
   Sun,
   SunMedium,
   Check,
   AlertTriangle,
-  Compass,
-  CheckCircle2,
-  Maximize2,
   RefreshCw,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
 import { compressImage } from '../../services/imageCompression';
+import { ScannerGalleryReview } from './ScannerGalleryReview';
 
 interface DocumentScannerModalProps {
   isOpen: boolean;
@@ -25,7 +24,7 @@ interface DocumentScannerModalProps {
   maxPhotos?: number;
 }
 
-type AdviceType = 'good' | 'low-light' | 'overexposed' | 'tilted' | 'moving';
+type AdviceType = 'none' | 'low-light' | 'overexposed' | 'moving';
 
 export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   isOpen,
@@ -47,20 +46,21 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedInSession, setCapturedInSession] = useState<UploadedPhoto[]>([]);
   const [shutterFlash, setShutterFlash] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   // Live analyzer metrics
-  const [advice, setAdvice] = useState<{ type: AdviceType; text: string }>({
-    type: 'good',
-    text: 'Cadrez la page de votre cahier',
+  const [activeAdvice, setActiveAdvice] = useState<{ type: AdviceType; text: string }>({
+    type: 'none',
+    text: '',
   });
-  const [tiltAngle, setTiltAngle] = useState<{ beta: number; gamma: number; deviation: number }>({
-    beta: 0,
-    gamma: 0,
-    deviation: 0,
-  });
-  const [isLevel, setIsLevel] = useState(true);
 
-  const remainingSlots = maxPhotos - (currentPhotoCount + capturedInSession.length);
+  // Tilt and orientation states
+  const [tiltDeviation, setTiltDeviation] = useState(0);
+  const [tiltRoll, setTiltRoll] = useState(0);
+  const [isProperlyAligned, setIsProperlyAligned] = useState(true);
+
+  const totalPhotos = currentPhotoCount + capturedInSession.length;
+  const remainingSlots = maxPhotos - totalPhotos;
 
   // Stop camera tracks cleanly
   const stopCamera = useCallback(() => {
@@ -119,7 +119,6 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionState('denied');
       } else {
-        // Fallback with looser constraints
         try {
           const fallbackStream = await navigator.mediaDevices.getUserMedia({
             audio: false,
@@ -159,27 +158,38 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
-  // Device orientation / level listener
+  // Orientation listener: ONLY show level bar when NOT straight (neither flat, nor upright portrait, nor landscape)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
       if (e.beta === null || e.gamma === null) return;
-      // Normal flat position holding phone horizontally over notebook:
-      // beta is around 0° (pitch flat) or 90° if held vertically.
-      // Deviation from perpendicular to surface:
-      const beta = Math.round(e.beta);
-      const gamma = Math.round(e.gamma);
+      const beta = e.beta;
+      const gamma = e.gamma;
 
-      // Compute deviation from horizontal plane
-      // When looking down at a desk, phone is roughly parallel to floor (beta ~ 0, gamma ~ 0)
-      const absGamma = Math.abs(gamma);
-      const absBeta = Math.abs(beta);
-      const deviation = Math.min(Math.sqrt(absGamma * absGamma + absBeta * absBeta), 45);
+      // 1. Check if holding phone flat over table/notebook (most common scan position):
+      // Beta and gamma are both near 0°
+      const isFlatOverDesk = Math.abs(beta) < 14 && Math.abs(gamma) < 14;
 
-      const level = deviation < 12;
-      setTiltAngle({ beta, gamma, deviation: Math.round(deviation) });
-      setIsLevel(level);
+      // 2. Check if held upright portrait (e.g. scanning a whiteboard/easel):
+      // Beta is near 90°, gamma is near 0°
+      const isUprightPortrait = Math.abs(beta - 90) < 16 && Math.abs(gamma) < 12;
+
+      // 3. Check if held upright landscape:
+      // Gamma is near 90° or -90°, beta is near 0° or 90°
+      const isLandscape =
+        (Math.abs(gamma - 90) < 16 || Math.abs(gamma + 90) < 16) && Math.abs(beta) < 18;
+
+      const aligned = isFlatOverDesk || isUprightPortrait || isLandscape;
+
+      // Calculate deviation for visual level indicator if crooked
+      const deviation = Math.round(
+        Math.min(Math.sqrt(gamma * gamma + (beta > 45 ? (beta - 90) ** 2 : beta ** 2)), 45)
+      );
+
+      setTiltDeviation(deviation);
+      setTiltRoll(Math.round(gamma));
+      setIsProperlyAligned(aligned);
     };
 
     if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
@@ -191,14 +201,14 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     };
   }, [isOpen]);
 
-  // Light and motion analyzer loop
+  // Light and motion analyzer: only advise when an actual problem is detected
   useEffect(() => {
     if (!isOpen || permissionState !== 'granted') return;
 
     let isMounted = true;
     const sampleCanvas = document.createElement('canvas');
-    sampleCanvas.width = 80;
-    sampleCanvas.height = 60;
+    sampleCanvas.width = 64;
+    sampleCanvas.height = 48;
     const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
 
     const analyzeFrame = () => {
@@ -207,25 +217,23 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       const video = videoRef.current;
       if (video && video.readyState >= 2 && sampleCtx) {
         try {
-          sampleCtx.drawImage(video, 0, 0, 80, 60);
-          const imgData = sampleCtx.getImageData(0, 0, 80, 60);
+          sampleCtx.drawImage(video, 0, 0, 64, 48);
+          const imgData = sampleCtx.getImageData(0, 0, 64, 48);
           const data = imgData.data;
 
-          // 1. Calculate average luminance in the central document area
+          // Average Luminance
           let totalLuminance = 0;
           let count = 0;
           for (let i = 0; i < data.length; i += 16) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
-            // Perceived luminance formula
-            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-            totalLuminance += lum;
+            totalLuminance += 0.299 * r + 0.587 * g + 0.114 * b;
             count++;
           }
           const avgLum = Math.round(totalLuminance / (count || 1));
 
-          // 2. Motion / shake detection compared to previous frame
+          // Motion Detection
           let motionDiff = 0;
           if (lastFrameDataRef.current && lastFrameDataRef.current.length === data.length) {
             const prev = lastFrameDataRef.current;
@@ -239,44 +247,35 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
           }
           lastFrameDataRef.current = new Uint8ClampedArray(data);
 
-          // 3. Formulate smart, prioritized guidance
-          if (avgLum < 60) {
-            setAdvice({
+          // Discreet advice only if an anomaly is present
+          if (avgLum < 55) {
+            setActiveAdvice({
               type: 'low-light',
-              text: 'Lumière faible — Allumez une lampe ou activez le flash',
+              text: 'Lumière faible — Allumez une lampe',
             });
-          } else if (avgLum > 215) {
-            setAdvice({
+          } else if (avgLum > 225) {
+            setActiveAdvice({
               type: 'overexposed',
-              text: 'Trop de reflets — Ajustez l’angle pour éviter les brillances',
+              text: 'Reflets intenses sur la page',
             });
-          } else if (motionDiff > 14) {
-            setAdvice({
+          } else if (motionDiff > 16) {
+            setActiveAdvice({
               type: 'moving',
-              text: 'Stabilisez votre appareil pour un texte bien net',
-            });
-          } else if (!isLevel && tiltAngle.deviation > 18) {
-            setAdvice({
-              type: 'tilted',
-              text: 'Tenez l’appareil bien à plat au-dessus de la page',
+              text: 'Stabilisez votre appareil',
             });
           } else {
-            setAdvice({
-              type: 'good',
-              text: 'Cadrage net et stable • Prêt à photographier',
-            });
+            setActiveAdvice({ type: 'none', text: '' });
           }
         } catch {
-          // ignore canvas sampling glitches
+          // ignore
         }
       }
 
-      // Sample every ~200ms
       setTimeout(() => {
         if (isMounted) {
           animFrameRef.current = requestAnimationFrame(analyzeFrame);
         }
-      }, 200);
+      }, 250);
     };
 
     animFrameRef.current = requestAnimationFrame(analyzeFrame);
@@ -285,7 +284,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       isMounted = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [isOpen, permissionState, isLevel, tiltAngle.deviation]);
+  }, [isOpen, permissionState]);
 
   // Start or stop on open/close
   useEffect(() => {
@@ -307,12 +306,11 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     try {
       setIsCapturing(true);
       setShutterFlash(true);
-      setTimeout(() => setShutterFlash(false), 200);
+      setTimeout(() => setShutterFlash(false), 180);
 
-      // Light haptic feedback if available on mobile
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
-          navigator.vibrate(40);
+          navigator.vibrate(35);
         } catch {
           // ignore
         }
@@ -324,21 +322,19 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       canvas.height = video.videoHeight || 1080;
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Impossible d’initialiser le canvas de capture');
+      if (!ctx) throw new Error('Erreur canvas');
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Convert to blob then file
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, 'image/jpeg', 0.92)
       );
 
-      if (!blob) throw new Error('Échec de la capture');
+      if (!blob) throw new Error('Échec capture');
 
       const photoIndex = currentPhotoCount + capturedInSession.length + 1;
       const file = new File([blob], `cahier_page_${photoIndex}.jpg`, { type: 'image/jpeg' });
 
-      // Run through our standard fast compression
       const { base64Data, dataUrl } = await compressImage(file);
 
       const newPhoto: UploadedPhoto = {
@@ -346,19 +342,19 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         file,
         previewUrl: dataUrl,
         compressedBase64: base64Data,
-        name: `Page de cahier ${photoIndex}`,
+        name: `Page ${photoIndex}`,
         size: file.size,
       };
 
       setCapturedInSession((prev) => [...prev, newPhoto]);
     } catch (err) {
-      console.error('Erreur lors de la capture photo:', err);
+      console.error('Erreur capture photo:', err);
     } finally {
       setIsCapturing(false);
     }
   };
 
-  // Finish session and add photos to the main form
+  // Finish session and commit photos
   const handleDone = () => {
     if (capturedInSession.length > 0) {
       onAddPhotos(capturedInSession);
@@ -370,44 +366,39 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0F172A] flex flex-col justify-between overflow-hidden select-none">
+    <div className="fixed inset-0 z-50 bg-[#0B1120] flex flex-col justify-between overflow-hidden select-none">
       {/* Hidden processing canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Shutter White Flash Effect */}
       {shutterFlash && (
-        <div className="absolute inset-0 z-50 bg-white pointer-events-none transition-opacity duration-200" />
+        <div className="absolute inset-0 z-50 bg-white pointer-events-none transition-opacity duration-150" />
       )}
 
-      {/* Top Controls Bar */}
-      <header className="relative z-20 flex items-center justify-between px-4 pt-4 pb-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+      {/* Clean Top Bar: Minimalist & Airy */}
+      <header className="relative z-20 flex items-center justify-between px-4 sm:px-6 pt-4 pb-2">
         <button
           onClick={handleDone}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-xs font-semibold transition-colors cursor-pointer border border-white/10"
+          className="p-2.5 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md transition-colors cursor-pointer border border-white/10"
+          title="Fermer"
         >
-          <X className="w-4 h-4" />
-          <span>Fermer</span>
+          <X className="w-5 h-5" />
         </button>
 
-        {/* Counter Badge */}
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1 rounded-full bg-[#5B8DEF]/30 border border-[#5B8DEF]/50 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5 text-[#5B8DEF]" />
-            <span>
-              {currentPhotoCount + capturedInSession.length} / {maxPhotos} photos
-            </span>
-          </div>
+        {/* Discreet Page Counter */}
+        <div className="px-3.5 py-1 rounded-full bg-black/30 border border-white/10 backdrop-blur-md text-xs font-semibold text-white/90">
+          <span>{totalPhotos} / {maxPhotos} photos</span>
         </div>
 
-        {/* Flash & Flip actions */}
+        {/* Camera Utilities (Flash & Flip) */}
         <div className="flex items-center gap-2">
           {torchAvailable && (
             <button
               onClick={toggleTorch}
-              className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer border ${
+              className={`p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer border ${
                 torchOn
                   ? 'bg-[#FFC04D] text-[#1E2A3A] border-[#FFC04D]'
-                  : 'bg-black/40 hover:bg-black/60 text-white border-white/10'
+                  : 'bg-black/30 hover:bg-black/50 text-white border-white/10'
               }`}
               title={torchOn ? 'Désactiver le flash' : 'Activer le flash'}
             >
@@ -417,27 +408,24 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
           <button
             onClick={flipCamera}
-            className="p-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white transition-colors cursor-pointer border border-white/10"
-            title="Changer de caméra"
+            className="p-2.5 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md transition-colors cursor-pointer border border-white/10"
+            title="Inverser la caméra"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Main Viewfinder Area */}
+      {/* Main Viewfinder Area: Clean & Unobstructed */}
       <main className="relative flex-1 flex items-center justify-center overflow-hidden">
         {/* Permission Request State */}
         {permissionState === 'requesting' && (
           <div className="relative z-10 text-center p-6 max-w-sm mx-auto">
-            <div className="w-14 h-14 rounded-2xl bg-[#5B8DEF]/20 border border-[#5B8DEF]/40 text-[#5B8DEF] mx-auto flex items-center justify-center mb-4 animate-pulse">
-              <Camera className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-2xl bg-[#5B8DEF]/20 border border-[#5B8DEF]/40 text-[#5B8DEF] mx-auto flex items-center justify-center mb-3 animate-pulse">
+              <Camera className="w-6 h-6" />
             </div>
-            <h3 className="font-heading font-bold text-lg text-white mb-1">
+            <p className="font-heading font-semibold text-base text-white">
               Connexion à l'appareil photo...
-            </h3>
-            <p className="text-xs text-white/70">
-              Veuillez autoriser l'accès à la caméra pour scanner votre cahier.
             </p>
           </div>
         )}
@@ -449,10 +437,10 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h3 className="font-heading font-bold text-base text-white mb-1.5">
-              Accès à la caméra refusé
+              Accès à la caméra requis
             </h3>
             <p className="text-xs text-white/70 leading-relaxed mb-4">
-              Pour scanner votre cahier directement, activez l'autorisation appareil photo dans les paramètres de votre navigateur (icône cadenas ou paramètres du site).
+              Veuillez autoriser l'accès à la caméra dans les paramètres de votre navigateur pour photographier vos notes.
             </p>
             <div className="flex gap-2 justify-center">
               <button
@@ -471,21 +459,6 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
           </div>
         )}
 
-        {/* Unsupported State */}
-        {permissionState === 'unsupported' && (
-          <div className="relative z-10 text-center p-6 max-w-sm mx-auto bg-black/60 backdrop-blur-md rounded-2xl border border-white/10">
-            <p className="text-sm text-white mb-3">
-              Votre navigateur ne supporte pas l'accès direct à la caméra. Utilisez le sélecteur de fichiers habituel.
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-[#5B8DEF] text-white text-xs font-semibold rounded-xl"
-            >
-              Retour
-            </button>
-          </div>
-        )}
-
         {/* The Live Video Element */}
         <video
           ref={videoRef}
@@ -497,126 +470,103 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
           }`}
         />
 
-        {/* Gauth/CamScanner Document Mask Overlay */}
+        {/* Clean, Minimalist Viewfinder Overlay */}
         {permissionState === 'granted' && (
-          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4 sm:p-8">
-            {/* Dark Mask Surrounding the Notebook Viewfinder */}
-            <div className="relative w-full max-w-[340px] sm:max-w-[420px] aspect-[3/4] max-h-[68vh] flex items-center justify-center">
-              {/* Outer Bounding Box with Quilo Colors */}
-              <div
-                className={`absolute inset-0 rounded-2xl border-2 transition-all duration-300 ${
-                  advice.type === 'good'
-                    ? 'border-[#75D6B0] shadow-[0_0_24px_rgba(117,214,176,0.25)]'
-                    : 'border-[#5B8DEF]/70 shadow-[0_0_20px_rgba(91,141,239,0.2)]'
-                }`}
-              />
-
-              {/* 4 Professional L-Shaped Corner Brackets */}
+          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4 sm:p-6">
+            <div className="relative w-full max-w-[340px] sm:max-w-[400px] aspect-[3/4] max-h-[66vh] flex items-center justify-center">
+              {/* Sleek L-Corner Brackets in Quilo Blue */}
               {/* Top-Left */}
-              <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-[#5B8DEF] rounded-tl-xl" />
+              <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-[#5B8DEF] rounded-tl-lg" />
               {/* Top-Right */}
-              <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-[#5B8DEF] rounded-tr-xl" />
+              <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-[#5B8DEF] rounded-tr-lg" />
               {/* Bottom-Left */}
-              <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-[#5B8DEF] rounded-bl-xl" />
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-[#5B8DEF] rounded-bl-lg" />
               {/* Bottom-Right */}
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-[#5B8DEF] rounded-br-xl" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-[#5B8DEF] rounded-br-lg" />
 
-              {/* Subtle Document Grid Lines */}
-              <div className="absolute inset-4 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-20">
-                <div className="border-r border-b border-white" />
-                <div className="border-r border-b border-white" />
-                <div className="border-b border-white" />
-                <div className="border-r border-b border-white" />
-                <div className="border-r border-b border-white" />
-                <div className="border-b border-white" />
-                <div className="border-r border-white" />
-                <div className="border-r border-white" />
-                <div />
-              </div>
+              {/* Discreet Border */}
+              <div className="absolute inset-0 rounded-xl border border-white/15" />
 
-              {/* Subtle Center Document Target */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                <div className="w-8 h-8 border border-white/60 rounded-full flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-[#5B8DEF] rounded-full" />
-                </div>
-              </div>
-
-              {/* Floating Real-Time Advice Pill */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-[320px]">
-                <div
-                  className={`px-3.5 py-1.5 rounded-full text-center text-xs font-medium backdrop-blur-md border shadow-md flex items-center justify-center gap-2 transition-all duration-200 ${
-                    advice.type === 'good'
-                      ? 'bg-[#0F172A]/85 text-[#75D6B0] border-[#75D6B0]/50'
-                      : advice.type === 'low-light'
-                      ? 'bg-[#0F172A]/90 text-[#FFC04D] border-[#FFC04D]/50'
-                      : advice.type === 'tilted' || advice.type === 'moving'
-                      ? 'bg-[#0F172A]/90 text-[#5B8DEF] border-[#5B8DEF]/50'
-                      : 'bg-[#0F172A]/90 text-white border-white/20'
-                  }`}
-                >
-                  {advice.type === 'good' ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#75D6B0] shrink-0" />
-                  ) : advice.type === 'low-light' ? (
-                    <Sun className="w-3.5 h-3.5 text-[#FFC04D] shrink-0" />
-                  ) : advice.type === 'overexposed' ? (
-                    <SunMedium className="w-3.5 h-3.5 text-[#FFC04D] shrink-0" />
-                  ) : (
-                    <Compass className="w-3.5 h-3.5 text-[#5B8DEF] shrink-0" />
-                  )}
-                  <span className="truncate">{advice.text}</span>
-                </div>
-              </div>
-
-              {/* Professional Horizon Stabilization Bar (Like Gauth / CamScanner) */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5">
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px]">
-                  <span className="text-white/70">Niveau :</span>
-                  <div className="w-20 h-2 bg-white/20 rounded-full relative overflow-hidden">
-                    <div
-                      className={`absolute top-0 bottom-0 w-3 rounded-full transition-all duration-150 ${
-                        isLevel ? 'bg-[#75D6B0] shadow-[0_0_8px_#75D6B0]' : 'bg-[#FFC04D]'
-                      }`}
-                      style={{
-                        left: `${Math.min(
-                          Math.max(50 + (tiltAngle.gamma / 30) * 40 - 7, 0),
-                          85
-                        )}%`,
-                      }}
-                    />
+              {/* Floating Real-Time Advice: ONLY appears if an issue is detected */}
+              {activeAdvice.type !== 'none' && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-[300px] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-1.5 rounded-full text-center text-xs font-medium backdrop-blur-md bg-black/75 border border-white/20 text-[#FFC04D] flex items-center justify-center gap-1.5 shadow-md">
+                    {activeAdvice.type === 'low-light' ? (
+                      <Sun className="w-3.5 h-3.5 shrink-0" />
+                    ) : activeAdvice.type === 'overexposed' ? (
+                      <SunMedium className="w-3.5 h-3.5 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                    <span className="truncate">{activeAdvice.text}</span>
                   </div>
-                  <span
-                    className={`font-semibold ${
-                      isLevel ? 'text-[#75D6B0]' : 'text-white/80'
-                    }`}
-                  >
-                    {isLevel ? 'À plat' : `${tiltAngle.deviation}°`}
+                </div>
+              )}
+
+              {/* Tilting / Level Bar: ONLY APPEARS WHEN NOT STRAIGHT (not flat, not upright portrait, not landscape) */}
+              {!isProperlyAligned && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-[#FFC04D]/40 text-[11px] text-[#FFC04D] shadow-lg">
+                    <span>Incliné :</span>
+                    <div className="w-18 h-1.5 bg-white/20 rounded-full relative overflow-hidden">
+                      <div
+                        className="absolute top-0 bottom-0 w-2.5 bg-[#FFC04D] rounded-full transition-all duration-100"
+                        style={{
+                          left: `${Math.min(Math.max(50 + (tiltRoll / 25) * 45 - 5, 0), 85)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="font-semibold">{tiltDeviation}°</span>
+                  </div>
+                  <span className="text-[10px] text-white/60 tracking-tight">
+                    Tenez l'appareil droit
                   </span>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
       </main>
 
-      {/* Bottom Shutter & Session Gallery Controls */}
-      <footer className="relative z-20 px-6 pt-3 pb-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+      {/* Bottom Controls Bar: Stylish & Modern Review Preview + Shutter */}
+      <footer className="relative z-20 px-6 pt-3 pb-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          {/* Left: Thumbnail of last captured photo in this session */}
-          <div className="w-16 flex items-center justify-start">
+          {/* Left: STYLISH & MODERN IMAGE PREVIEW (Tap opens full review/delete/crop) */}
+          <div className="w-20 flex flex-col items-start">
             {capturedInSession.length > 0 ? (
-              <div className="relative group">
-                <img
-                  src={capturedInSession[capturedInSession.length - 1].previewUrl}
-                  alt="Dernière capture"
-                  className="w-12 h-12 object-cover rounded-xl border-2 border-[#5B8DEF] shadow-md"
-                />
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#385DE8] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white">
-                  {capturedInSession.length}
+              <button
+                type="button"
+                onClick={() => setIsReviewOpen(true)}
+                className="group relative cursor-pointer active:scale-95 transition-all duration-200"
+                title="Gérer les photos scannées"
+              >
+                {/* Layered Card 2 (Stack effect behind) */}
+                {capturedInSession.length > 1 && (
+                  <div className="absolute -top-1 -right-1 w-13 h-13 rounded-xl bg-white/20 border border-white/20 rotate-4 transition-transform group-hover:rotate-6" />
+                )}
+
+                {/* Layered Card 1 (Main front card) */}
+                <div className="relative w-13 h-13 rounded-xl overflow-hidden border-2 border-[#5B8DEF] shadow-lg group-hover:border-[#75D6B0] transition-colors">
+                  <img
+                    src={capturedInSession[capturedInSession.length - 1].previewUrl}
+                    alt="Dernière photo"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                  {/* Floating count pill */}
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-[#385DE8] text-white text-[10px] font-extrabold rounded-full flex items-center gap-0.5 border border-white shadow-sm">
+                    <Layers className="w-2.5 h-2.5" />
+                    <span>{capturedInSession.length}</span>
+                  </span>
+                </div>
+
+                <span className="block text-[10px] font-semibold text-white/80 group-hover:text-white mt-1 text-center w-13 transition-colors">
+                  Gérer
                 </span>
-              </div>
+              </button>
             ) : (
-              <div className="w-12 h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white/30 text-[10px] text-center p-1">
-                0 photo
+              <div className="w-13 h-13 rounded-xl border border-white/10 bg-white/5 flex flex-col items-center justify-center text-white/30 text-[10px] text-center">
+                <Layers className="w-4 h-4 mb-0.5 opacity-40" />
+                <span>0</span>
               </div>
             )}
           </div>
@@ -626,35 +576,27 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
             <button
               onClick={capturePhoto}
               disabled={isCapturing || remainingSlots <= 0 || permissionState !== 'granted'}
-              className={`relative flex items-center justify-center w-18 h-18 rounded-full border-4 transition-all duration-150 cursor-pointer active:scale-92 disabled:opacity-40 disabled:cursor-not-allowed ${
-                advice.type === 'good'
-                  ? 'border-[#75D6B0] shadow-[0_0_20px_rgba(117,214,176,0.4)]'
-                  : 'border-[#5B8DEF] shadow-[0_0_16px_rgba(91,141,239,0.3)]'
-              }`}
+              className="relative flex items-center justify-center w-18 h-18 rounded-full border-4 border-[#5B8DEF] shadow-[0_0_16px_rgba(91,141,239,0.3)] transition-all duration-150 cursor-pointer active:scale-92 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#75D6B0] hover:shadow-[0_0_20px_rgba(117,214,176,0.3)]"
               title="Prendre la photo"
             >
-              {/* Inner Circle */}
               <div
                 className={`w-14 h-14 rounded-full transition-all duration-150 ${
                   isCapturing ? 'bg-white/50 scale-90' : 'bg-white hover:bg-white/95'
                 }`}
               />
             </button>
-            <span className="text-[11px] text-white/70 mt-1.5 font-medium">
-              {remainingSlots <= 0
-                ? 'Limite atteinte (13)'
-                : 'Prendre la photo'}
-            </span>
           </div>
 
-          {/* Right: Done Button */}
-          <div className="w-16 flex items-center justify-end">
+          {/* Right: Validation / Finish Check Button */}
+          <div className="w-20 flex flex-col items-end">
             {capturedInSession.length > 0 ? (
               <button
                 onClick={handleDone}
-                className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-[#75D6B0] hover:bg-[#5EC49D] text-[#1E2A3A] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                className="group flex flex-col items-center gap-1 p-2 rounded-xl bg-[#75D6B0] hover:bg-[#5EC49D] text-[#1E2A3A] transition-all shadow-md active:scale-95 cursor-pointer"
+                title="Valider et continuer"
               >
-                <span>Terminé</span>
+                <Check className="w-5 h-5 stroke-[2.5]" />
+                <span className="text-[10px] font-bold">Valider</span>
               </button>
             ) : (
               <button
@@ -667,6 +609,18 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* Dedicated Full Review / Crop / Delete Modal (Opened by tapping the modern thumbnail stack) */}
+      <ScannerGalleryReview
+        isOpen={isReviewOpen}
+        photos={capturedInSession}
+        onClose={() => setIsReviewOpen(false)}
+        onUpdatePhotos={(updated) => setCapturedInSession(updated)}
+        onValidate={() => {
+          setIsReviewOpen(false);
+          handleDone();
+        }}
+      />
     </div>
   );
 };
