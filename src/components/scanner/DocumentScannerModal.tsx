@@ -552,42 +552,70 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       {/* Bottom Controls Bar: Thumbnail Preview + Shutter + Clean Validate Button */}
       <footer className="relative z-20 px-6 pt-3 pb-8 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          {/* Left: Thumbnail Preview of last captured page */}
-          <div className="w-24 flex items-center justify-start">
+          {/* Left: Square Stack of captured pages + Minimalist Counter */}
+          <div className="w-24 sm:w-28 flex items-center justify-start">
             {capturedInSession.length > 0 ? (
-              <div className="relative group">
+              <div className="relative group flex items-center justify-center">
+                {/* 3rd Layer behind (when 3 or more photos) */}
+                {capturedInSession.length >= 3 && (
+                  <div className="absolute inset-0 w-13 h-13 sm:w-14 sm:h-14 aspect-square rounded-2xl bg-[#0F172A] border border-white/10 shadow-sm pointer-events-none transform -rotate-8 -translate-x-1.5 translate-y-0.5 overflow-hidden">
+                    {capturedInSession[capturedInSession.length - 3] && (
+                      <img
+                        src={capturedInSession[capturedInSession.length - 3].previewUrl}
+                        alt=""
+                        className="w-full h-full object-cover opacity-30 filter blur-[0.5px]"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* 2nd Layer behind (when 2 or more photos) */}
+                {capturedInSession.length >= 2 && (
+                  <div className="absolute inset-0 w-13 h-13 sm:w-14 sm:h-14 aspect-square rounded-2xl bg-[#0F172A] border border-white/15 shadow-md pointer-events-none transform rotate-5 translate-x-1.5 -translate-y-0.5 overflow-hidden">
+                    {capturedInSession[capturedInSession.length - 2] && (
+                      <img
+                        src={capturedInSession[capturedInSession.length - 2].previewUrl}
+                        alt=""
+                        className="w-full h-full object-cover opacity-50 filter blur-[0.3px]"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Front Square Card (Latest photo) */}
                 <button
                   type="button"
                   onClick={handleReEditLast}
-                  className="relative w-12 h-15 rounded-lg overflow-hidden border-2 border-white bg-[#0F172A] shadow-xl transform active:scale-95 transition-all cursor-pointer"
-                  title="Réajuster la dernière page"
+                  className="relative z-10 w-13 h-13 sm:w-14 sm:h-14 aspect-square rounded-2xl overflow-hidden border border-white/35 bg-[#0F172A] shadow-xl transform active:scale-95 transition-all cursor-pointer group-hover:border-white"
+                  title="Appuyer pour réajuster la photo"
                 >
                   <img
                     src={capturedInSession[capturedInSession.length - 1].previewUrl}
-                    alt="Dernière page"
+                    alt="Dernière photo"
                     className="w-full h-full object-cover"
                   />
-                  {/* Badge count */}
-                  <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#0A0E17] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white/40 shadow-lg">
-                    {capturedInSession.length}
-                  </div>
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
                 </button>
 
-                {/* Subtle Delete Button */}
+                {/* Clean, Minimalist Square Counter Badge */}
+                <div className="absolute -top-1.5 -right-1.5 z-20 min-w-[22px] h-[22px] px-1.5 rounded-full bg-white text-[#0A0E17] font-heading font-bold text-[11px] flex items-center justify-center shadow-lg ring-2 ring-[#070A11] pointer-events-none">
+                  {capturedInSession.length}
+                </div>
+
+                {/* Subtle Delete Last Photo Button */}
                 <button
                   type="button"
                   onClick={handleRemoveLast}
-                  className="absolute -bottom-1.5 -left-1.5 p-1 rounded-full bg-black/80 hover:bg-[#E8604C] text-white/80 hover:text-white border border-white/20 transition-colors cursor-pointer shadow-md"
-                  title="Supprimer la dernière page"
+                  className="absolute -bottom-1.5 -left-1.5 z-20 w-6 h-6 rounded-full bg-black/85 hover:bg-[#E8604C] text-white/70 hover:text-white border border-white/20 transition-all flex items-center justify-center cursor-pointer shadow-md active:scale-90"
+                  title="Supprimer la dernière photo"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             ) : (
-              /* Minimalist Empty State Placeholder */
-              <div className="w-12 h-15 rounded-lg border border-white/20 bg-white/5 flex flex-col items-center justify-center text-white/40 text-[10px]">
-                <Camera className="w-4 h-4 mb-0.5 opacity-60" />
-                <span>0</span>
+              /* Minimalist Empty State Placeholder: Square and Airy */
+              <div className="w-13 h-13 sm:w-14 sm:h-14 aspect-square rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/20">
+                <div className="w-2.5 h-2.5 rounded-full bg-white/20" />
               </div>
             )}
           </div>
