@@ -125,72 +125,43 @@ export const ScannerGalleryReview: React.FC<ScannerGalleryReviewProps> = ({
         />
       )}
 
-      {/* Top Header: Clean, Elegant & Uncluttered */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-white/10 bg-black/40 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
-            title="Retour au viseur de capture"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Reprendre</span>
-          </button>
+      {/* Top Header: Minimalist, Airy & Perfectly Balanced */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/10 bg-black/40 backdrop-blur-md">
+        {/* Left: Discreet Back to Camera Arrow */}
+        <button
+          onClick={onClose}
+          className="p-2 -ml-1 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          title="Retourner à la caméra"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading font-bold text-sm sm:text-base text-white">
-                Pages scannées
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-white/10 text-[11px] font-bold text-white/90">
-                {photos.length} page{photos.length > 1 ? 's' : ''}
-              </span>
-            </div>
-            <p className="text-[11px] text-white/60 hidden sm:block">
-              Vérifiez, pivotez ou recadrez librement vos pages
-            </p>
-          </div>
+        {/* Center: Clean Page Indicator */}
+        <div className="text-center">
+          <p className="font-heading font-semibold text-sm sm:text-base text-white tracking-wide">
+            {viewMode === 'inspector'
+              ? `Page ${currentIndex + 1} sur ${photos.length}`
+              : `Pages scannées (${photos.length})`}
+          </p>
         </div>
 
-        {/* View Mode Toggle & Top Validate */}
-        <div className="flex items-center gap-2.5">
-          {photos.length > 1 && (
-            <div className="flex items-center p-0.5 rounded-lg bg-white/10 border border-white/10">
-              <button
-                onClick={() => setViewMode('inspector')}
-                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                  viewMode === 'inspector'
-                    ? 'bg-white text-[#0B0F19] font-semibold'
-                    : 'text-white/70 hover:text-white'
-                }`}
-                title="Vue détaillée"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                  viewMode === 'grid'
-                    ? 'bg-white text-[#0B0F19] font-semibold'
-                    : 'text-white/70 hover:text-white'
-                }`}
-                title="Vue grille"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </button>
-            </div>
+        {/* Right: View Mode Toggle Icon */}
+        <div className="flex items-center justify-end w-9">
+          {photos.length > 1 ? (
+            <button
+              onClick={() => setViewMode(viewMode === 'inspector' ? 'grid' : 'inspector')}
+              className="p-2 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title={viewMode === 'inspector' ? 'Afficher la grille de toutes les pages' : 'Afficher la vue détaillée'}
+            >
+              {viewMode === 'inspector' ? (
+                <LayoutGrid className="w-5 h-5" />
+              ) : (
+                <Maximize2 className="w-5 h-5" />
+              )}
+            </button>
+          ) : (
+            <div className="w-5" />
           )}
-
-          {/* Top Right Quick Validate */}
-          <button
-            onClick={onValidate}
-            disabled={photos.length === 0}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-md shadow-[#75D6B0]/20 hover:shadow-lg hover:shadow-[#75D6B0]/30 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-[#75D6B0]/40"
-            title="Valider toutes les pages et passer à l'étape suivante"
-          >
-            <Check className="w-4 h-4 stroke-[3]" />
-            <span>Valider</span>
-          </button>
         </div>
       </header>
 
@@ -217,15 +188,6 @@ export const ScannerGalleryReview: React.FC<ScannerGalleryReviewProps> = ({
         ) : viewMode === 'inspector' && currentPhoto ? (
           /* --- INSPECTOR FOCUS MODE: Large Clean Paper Presentation --- */
           <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center flex-1">
-            {/* Active Page Header Badge */}
-            <div className="flex items-center justify-between w-full max-w-md px-2 mb-2 text-xs text-white/70">
-              <span className="font-medium">
-                Page {currentIndex + 1} sur {photos.length}
-              </span>
-              <span className="text-[11px] text-white/50">
-                Touchez l'image ou « Recadrer » pour ajuster les bords
-              </span>
-            </div>
 
             {/* Central High-Resolution Document Canvas with Left/Right Nav */}
             <div className="relative flex items-center justify-center w-full">
