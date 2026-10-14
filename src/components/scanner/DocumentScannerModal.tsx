@@ -12,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
-import { compressImage } from '../../services/imageCompression';
+import { canvasToFile } from '../../services/imageCompression';
 import { InteractiveCropEditor } from './InteractiveCropEditor';
 
 interface DocumentScannerModalProps {
@@ -33,7 +33,6 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   maxPhotos = 13,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const lastFrameDataRef = useRef<Uint8ClampedArray | null>(null);
@@ -273,8 +272,8 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     };
   }, [isOpen, startCamera, stopCamera]);
 
-  // Capture Photo Handler: immediately opens the single-photo adjustment screen
-  const capturePhoto = async () => {
+  // Capture Photo Handler: instantly captures and opens the single-photo adjustment screen
+  const capturePhoto = () => {
     if (!videoRef.current || isCapturing || remainingSlots <= 0) return;
 
     try {
@@ -291,25 +290,42 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       }
 
       const video = videoRef.current;
-      const canvas = canvasRef.current || document.createElement('canvas');
-      canvas.width = video.videoWidth || 1920;
-      canvas.height = video.videoHeight || 1080;
+      let width = video.videoWidth || 1920;
+      let height = video.videoHeight || 1080;
+
+      // Ensure valid dimensions
+      if (width <= 0) width = 1280;
+      if (height <= 0) height = 720;
+
+      // Balance clarity and performance on the capture canvas (max 1600px)
+      const maxDim = 1600;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Erreur canvas');
+      if (!ctx) throw new Error('Erreur canvas 2D');
 
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.92)
-      );
-
-      if (!blob) throw new Error('Échec capture');
-
       const photoIndex = currentPhotoCount + capturedInSession.length + 1;
-      const file = new File([blob], `cahier_page_${photoIndex}.jpg`, { type: 'image/jpeg' });
-
-      const { base64Data, dataUrl } = await compressImage(file);
+      const { file, dataUrl, base64Data } = canvasToFile(
+        canvas,
+        `cahier_page_${photoIndex}.jpg`,
+        0.88
+      );
 
       const newPhoto: UploadedPhoto = {
         id: `camera_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -390,9 +406,6 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#070A11] flex flex-col justify-between overflow-hidden select-none">
-      {/* Hidden processing canvas */}
-      <canvas ref={canvasRef} className="hidden" />
-
       {/* Shutter White Flash Effect */}
       {shutterFlash && (
         <div className="absolute inset-0 z-50 bg-white pointer-events-none transition-opacity duration-150" />

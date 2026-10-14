@@ -61,3 +61,29 @@ export async function createThumbnail(file: File): Promise<string> {
   const result = await compressImage(file, 320, 0.65);
   return result.dataUrl;
 }
+
+/**
+ * Synchronously converts an HTMLCanvasElement to a File, dataUrl, and base64Data.
+ * Avoids any async toBlob or FileReader hanging in iframe/mobile webviews.
+ */
+export function canvasToFile(
+  canvas: HTMLCanvasElement,
+  fileName: string,
+  quality = 0.85
+): { file: File; dataUrl: string; base64Data: string } {
+  const mimeType = 'image/jpeg';
+  const dataUrl = canvas.toDataURL(mimeType, quality);
+  const base64Data = dataUrl.split(',')[1] || '';
+
+  const binaryString = atob(base64Data);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const blob = new Blob([bytes], { type: mimeType });
+  const file = new File([blob], fileName, { type: mimeType });
+
+  return { file, dataUrl, base64Data };
+}

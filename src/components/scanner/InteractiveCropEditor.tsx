@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Check, ArrowLeft, RotateCw } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
-import { compressImage } from '../../services/imageCompression';
+import { compressImage, canvasToFile } from '../../services/imageCompression';
 
 interface InteractiveCropEditorProps {
   photo: UploadedPhoto;
@@ -63,13 +63,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.92)
-      );
-      if (!blob) return;
-
-      const file = new File([blob], currentPhoto.name, { type: 'image/jpeg' });
-      const { base64Data, dataUrl } = await compressImage(file);
+      const { file, dataUrl, base64Data } = canvasToFile(canvas, currentPhoto.name, 0.88);
 
       setCurrentPhoto({
         ...currentPhoto,
@@ -209,14 +203,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
 
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.92)
-      );
-
-      if (!blob) throw new Error('Blob creation failed');
-
-      const file = new File([blob], currentPhoto.name, { type: 'image/jpeg' });
-      const { base64Data, dataUrl } = await compressImage(file);
+      const { file, dataUrl, base64Data } = canvasToFile(canvas, currentPhoto.name, 0.88);
 
       onSave({
         ...currentPhoto,
@@ -233,7 +220,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070A11] flex flex-col justify-between text-white select-none animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[60] bg-[#070A11] flex flex-col justify-between text-white select-none animate-in fade-in duration-150">
       {/* Top Header: Exactly 1 Clean, Airy, Uncluttered Line */}
       <header className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-8 border-b border-white/10 bg-black/40 backdrop-blur-md">
         {/* Left: Reprendre / Retake */}
