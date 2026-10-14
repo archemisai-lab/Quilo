@@ -243,7 +243,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({
               Tu veux directement prendre ta photo ?
             </p>
             <p className="text-xs text-[#4B5A70] mt-0.5">
-              Scannez vos pages de cahier avec conseils de cadrage, lumière et barre de niveau.
+              Scannez directement vos pages de cours avec conseils de lumière et recadrage libre.
             </p>
           </div>
         </div>

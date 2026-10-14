@@ -5,15 +5,18 @@ import {
   Trash2,
   RotateCw,
   Crop,
-  ZoomIn,
-  Camera,
   ArrowLeft,
-  Sliders,
-  CheckCircle2,
-  Sparkles,
+  Plus,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Maximize2,
+  Camera,
 } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
 import { compressImage } from '../../services/imageCompression';
+import { InteractiveCropEditor } from './InteractiveCropEditor';
 
 interface ScannerGalleryReviewProps {
   isOpen: boolean;
@@ -30,24 +33,26 @@ export const ScannerGalleryReview: React.FC<ScannerGalleryReviewProps> = ({
   onUpdatePhotos,
   onValidate,
 }) => {
-  const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [cropMarginPercent, setCropMarginPercent] = useState<number>(0);
-  const [aspectLock, setAspectLock] = useState<'original' | '3:4' | '4:3'>('original');
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [isCroppingIndex, setIsCroppingIndex] = useState<number | null>(null);
+  const [isRotating, setIsRotating] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'inspector' | 'grid'>('inspector');
 
   if (!isOpen) return null;
 
-  // 1. Rotate a photo 90° clockwise and re-compress
+  const currentIndex = Math.min(Math.max(selectedIndex, 0), Math.max(photos.length - 1, 0));
+  const currentPhoto = photos[currentIndex];
+
+  // Rotate a photo 90° clockwise
   const handleRotate = async (index: number) => {
     const photo = photos[index];
-    if (!photo || isProcessing) return;
+    if (!photo || isRotating !== null) return;
 
     try {
-      setIsProcessing(true);
+      setIsRotating(index);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = photo.previewUrl;
-
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
@@ -82,326 +87,343 @@ export const ScannerGalleryReview: React.FC<ScannerGalleryReviewProps> = ({
 
       onUpdatePhotos(updatedList);
     } catch (err) {
-      console.error('Erreur rotation image:', err);
+      console.error('Erreur rotation:', err);
     } finally {
-      setIsProcessing(false);
+      setIsRotating(null);
     }
   };
 
-  // 2. Crop / resize margins of a photo
-  const handleApplyCrop = async (index: number) => {
-    const photo = photos[index];
-    if (!photo || isProcessing) return;
-
-    try {
-      setIsProcessing(true);
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = photo.previewUrl;
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
-
-      const marginRatio = cropMarginPercent / 100;
-      const cropX = img.width * marginRatio;
-      const cropY = img.height * marginRatio;
-      const cropW = img.width * (1 - 2 * marginRatio);
-      const cropH = img.height * (1 - 2 * marginRatio);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(cropW);
-      canvas.height = Math.round(cropH);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
-
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.92)
-      );
-      if (!blob) return;
-
-      const updatedFile = new File([blob], photo.name, { type: 'image/jpeg' });
-      const { base64Data, dataUrl } = await compressImage(updatedFile);
-
-      const updatedList = [...photos];
-      updatedList[index] = {
-        ...photo,
-        file: updatedFile,
-        previewUrl: dataUrl,
-        compressedBase64: base64Data,
-        size: updatedFile.size,
-      };
-
-      onUpdatePhotos(updatedList);
-      setEditingPhotoIndex(null);
-      setCropMarginPercent(0);
-    } catch (err) {
-      console.error('Erreur recadrage image:', err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // 3. Delete a photo from session
+  // Delete a photo
   const handleDelete = (index: number) => {
     const updated = photos.filter((_, i) => i !== index);
     onUpdatePhotos(updated);
-    if (editingPhotoIndex === index) {
-      setEditingPhotoIndex(null);
-    } else if (editingPhotoIndex !== null && editingPhotoIndex > index) {
-      setEditingPhotoIndex(editingPhotoIndex - 1);
+    if (selectedIndex >= updated.length) {
+      setSelectedIndex(Math.max(0, updated.length - 1));
+    }
+    if (isCroppingIndex === index) {
+      setIsCroppingIndex(null);
     }
   };
 
-  const editingPhoto = editingPhotoIndex !== null ? photos[editingPhotoIndex] : null;
+  // Save cropped photo from InteractiveCropEditor
+  const handleSaveCroppedPhoto = (updatedPhoto: UploadedPhoto) => {
+    if (isCroppingIndex === null) return;
+    const updated = [...photos];
+    updated[isCroppingIndex] = updatedPhoto;
+    onUpdatePhotos(updated);
+    setIsCroppingIndex(null);
+  };
 
   return (
-    <div className="fixed inset-0 z-60 bg-[#0F172A]/95 backdrop-blur-xl flex flex-col justify-between text-white animate-in fade-in duration-200 select-none">
-      {/* Top Header */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 bg-black/40">
+    <div className="fixed inset-0 z-60 bg-[#0B0F19] flex flex-col justify-between text-white animate-in fade-in duration-200 select-none">
+      {/* Interactive Freeform Crop Modal */}
+      {isCroppingIndex !== null && photos[isCroppingIndex] && (
+        <InteractiveCropEditor
+          photo={photos[isCroppingIndex]}
+          onSave={handleSaveCroppedPhoto}
+          onCancel={() => setIsCroppingIndex(null)}
+        />
+      )}
+
+      {/* Top Header: Clean, Elegant & Uncluttered */}
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-white/10 bg-black/40 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              if (editingPhotoIndex !== null) {
-                setEditingPhotoIndex(null);
-              } else {
-                onClose();
-              }
-            }}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            title="Retour au scanner"
+            onClick={onClose}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+            title="Retour au viseur de capture"
           >
             <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Reprendre</span>
           </button>
 
           <div>
-            <h2 className="font-heading font-bold text-base sm:text-lg text-white">
-              {editingPhotoIndex !== null
-                ? `Redimensionner • Page ${editingPhotoIndex + 1}`
-                : `Pages scannées (${photos.length})`}
-            </h2>
-            <p className="text-[11px] text-white/60">
-              {editingPhotoIndex !== null
-                ? 'Ajustez les bords et l’orientation de la page'
-                : 'Vérifiez, pivotez ou supprimez les pages capturées'}
+            <div className="flex items-center gap-2">
+              <h2 className="font-heading font-bold text-sm sm:text-base text-white">
+                Pages scannées
+              </h2>
+              <span className="px-2 py-0.5 rounded-full bg-white/10 text-[11px] font-bold text-white/90">
+                {photos.length} page{photos.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <p className="text-[11px] text-white/60 hidden sm:block">
+              Vérifiez, pivotez ou recadrez librement vos pages
             </p>
           </div>
         </div>
 
-        {/* Small Validate Checkmark Icon Button */}
-        <button
-          onClick={onValidate}
-          disabled={photos.length === 0}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#1E2A3A] transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Valider et continuer"
-        >
-          <Check className="w-5 h-5 stroke-[2.5]" />
-        </button>
+        {/* View Mode Toggle & Top Validate */}
+        <div className="flex items-center gap-2.5">
+          {photos.length > 1 && (
+            <div className="flex items-center p-0.5 rounded-lg bg-white/10 border border-white/10">
+              <button
+                onClick={() => setViewMode('inspector')}
+                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                  viewMode === 'inspector'
+                    ? 'bg-white text-[#0B0F19] font-semibold'
+                    : 'text-white/70 hover:text-white'
+                }`}
+                title="Vue détaillée"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-[#0B0F19] font-semibold'
+                    : 'text-white/70 hover:text-white'
+                }`}
+                title="Vue grille"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Top Right Quick Validate */}
+          <button
+            onClick={onValidate}
+            disabled={photos.length === 0}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-md shadow-[#75D6B0]/20 hover:shadow-lg hover:shadow-[#75D6B0]/30 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-[#75D6B0]/40"
+            title="Valider toutes les pages et passer à l'étape suivante"
+          >
+            <Check className="w-4 h-4 stroke-[3]" />
+            <span>Valider</span>
+          </button>
+        </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {/* Editor View if a photo is being resized/cropped */}
-        {editingPhotoIndex !== null && editingPhoto ? (
-          <div className="max-w-2xl mx-auto flex flex-col items-center justify-center gap-5">
-            {/* Large Preview with Visual Margin Indicator */}
-            <div className="relative max-w-full max-h-[55vh] rounded-2xl overflow-hidden border border-white/20 bg-black/60 shadow-xl flex items-center justify-center p-2">
-              <div className="relative inline-block overflow-hidden rounded-xl">
-                <img
-                  src={editingPhoto.previewUrl}
-                  alt={`Aperçu page ${editingPhotoIndex + 1}`}
-                  className="max-h-[50vh] max-w-full object-contain rounded-lg"
-                  style={{
-                    transform: `scale(${1 - (cropMarginPercent / 100) * 0.4})`,
-                    transition: 'transform 0.15s ease-out',
-                  }}
-                />
-
-                {/* Subtle crop overlay guide */}
-                {cropMarginPercent > 0 && (
-                  <div
-                    className="absolute inset-0 border-2 border-dashed border-[#75D6B0] pointer-events-none rounded-lg"
-                    style={{
-                      margin: `${cropMarginPercent * 1.5}px`,
-                    }}
-                  />
-                )}
-              </div>
+      {/* Main Review Canvas */}
+      <main className="flex-1 overflow-y-auto flex flex-col justify-center p-3 sm:p-6">
+        {photos.length === 0 ? (
+          <div className="text-center py-20 text-white/60 max-w-sm mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4">
+              <Layers className="w-6 h-6 text-white/40" />
+            </div>
+            <h3 className="font-heading font-semibold text-base text-white mb-1">
+              Aucune photo scannée
+            </h3>
+            <p className="text-xs text-white/60 mb-5">
+              Retournez au viseur pour prendre les pages de votre cours.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full bg-[#5B8DEF] hover:bg-[#385DE8] text-white font-heading font-semibold text-xs transition-colors cursor-pointer"
+            >
+              Ouvrir l'appareil photo
+            </button>
+          </div>
+        ) : viewMode === 'inspector' && currentPhoto ? (
+          /* --- INSPECTOR FOCUS MODE: Large Clean Paper Presentation --- */
+          <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center flex-1">
+            {/* Active Page Header Badge */}
+            <div className="flex items-center justify-between w-full max-w-md px-2 mb-2 text-xs text-white/70">
+              <span className="font-medium">
+                Page {currentIndex + 1} sur {photos.length}
+              </span>
+              <span className="text-[11px] text-white/50">
+                Touchez l'image ou « Recadrer » pour ajuster les bords
+              </span>
             </div>
 
-            {/* Resize & Crop Controls Toolbar */}
-            <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-semibold text-white flex items-center gap-1.5">
-                    <Crop className="w-4 h-4 text-[#75D6B0]" />
-                    <span>Rogner les marges (enlever la table / les doigts) :</span>
-                  </span>
-                  <span className="text-[#75D6B0] font-bold">-{cropMarginPercent}%</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="1"
-                    value={cropMarginPercent}
-                    onChange={(e) => setCropMarginPercent(Number(e.target.value))}
-                    className="w-full accent-[#75D6B0] cursor-pointer"
-                  />
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {[0, 5, 10, 15].map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => setCropMarginPercent(preset)}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        cropMarginPercent === preset
-                          ? 'bg-[#75D6B0] text-[#1E2A3A]'
-                          : 'bg-white/10 hover:bg-white/20 text-white/80'
-                      }`}
-                    >
-                      {preset === 0 ? 'Original (0%)' : `-${preset}%`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons inside editor */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+            {/* Central High-Resolution Document Canvas with Left/Right Nav */}
+            <div className="relative flex items-center justify-center w-full">
+              {/* Prev Page Arrow */}
+              {photos.length > 1 && (
                 <button
-                  onClick={() => handleRotate(editingPhotoIndex)}
-                  disabled={isProcessing}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+                  onClick={() => setSelectedIndex((prev) => Math.max(0, prev - 1))}
+                  disabled={currentIndex === 0}
+                  className="absolute left-1 sm:-left-4 z-20 p-2 sm:p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 backdrop-blur-md transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+                  title="Page précédente"
                 >
-                  <RotateCw className="w-4 h-4" />
-                  <span>Pivoter 90°</span>
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
+              )}
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditingPhotoIndex(null);
-                      setCropMarginPercent(0);
-                    }}
-                    className="px-3.5 py-2 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
-                  >
-                    Annuler
-                  </button>
+              {/* The Paper Sheet Presentation (Clean crisp white paper border & shadow) */}
+              <div
+                onClick={() => setIsCroppingIndex(currentIndex)}
+                className="group relative max-h-[56vh] aspect-auto rounded-xl overflow-hidden bg-[#111726] border-2 border-white/90 shadow-2xl cursor-pointer hover:border-[#75D6B0] transition-colors"
+                title="Cliquer pour recadrer librement"
+              >
+                <img
+                  src={currentPhoto.previewUrl}
+                  alt={`Page ${currentIndex + 1}`}
+                  className="max-h-[56vh] object-contain block mx-auto"
+                />
 
-                  <button
-                    onClick={() => handleApplyCrop(editingPhotoIndex)}
-                    disabled={isProcessing}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#75D6B0] hover:bg-[#5EC49D] text-[#1E2A3A] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-                  >
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                    <span>Appliquer</span>
-                  </button>
+                {/* Subtle Hover Overlay Hint */}
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  <div className="px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-xs font-semibold text-white flex items-center gap-1.5 shadow-lg">
+                    <Crop className="w-3.5 h-3.5 text-[#75D6B0]" />
+                    <span>Recadrer cette page</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Next Page Arrow */}
+              {photos.length > 1 && (
+                <button
+                  onClick={() => setSelectedIndex((prev) => Math.min(photos.length - 1, prev + 1))}
+                  disabled={currentIndex === photos.length - 1}
+                  className="absolute right-1 sm:-right-4 z-20 p-2 sm:p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 backdrop-blur-md transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+                  title="Page suivante"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Direct Tool Bar for the Active Page */}
+            <div className="mt-3 flex items-center gap-2 p-1.5 rounded-full bg-black/60 border border-white/15 backdrop-blur-md">
+              <button
+                onClick={() => setIsCroppingIndex(currentIndex)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+                title="Recadrer librement avec les côtés"
+              >
+                <Crop className="w-3.5 h-3.5 text-[#75D6B0]" />
+                <span>Recadrer</span>
+              </button>
+
+              <button
+                onClick={() => handleRotate(currentIndex)}
+                disabled={isRotating === currentIndex}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                title="Pivoter de 90° dans le sens horaire"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${isRotating === currentIndex ? 'animate-spin' : ''}`} />
+                <span>Pivoter</span>
+              </button>
+
+              <div className="w-px h-4 bg-white/20 mx-0.5" />
+
+              <button
+                onClick={() => handleDelete(currentIndex)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[#E8604C]/20 text-white/70 hover:text-[#E8604C] text-xs font-semibold transition-colors cursor-pointer"
+                title="Supprimer cette page"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Supprimer</span>
+              </button>
+            </div>
+
+            {/* Horizontal Filmstrip of Thumbnails */}
+            <div className="mt-4 w-full max-w-lg flex items-center justify-center gap-2 overflow-x-auto pb-1">
+              {photos.map((p, idx) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedIndex(idx)}
+                  className={`relative shrink-0 w-12 h-15 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                    selectedIndex === idx
+                      ? 'border-white scale-105 shadow-md shadow-white/20 ring-1 ring-[#75D6B0]'
+                      : 'border-white/30 opacity-60 hover:opacity-100 hover:border-white/60'
+                  }`}
+                  title={`Page ${idx + 1}`}
+                >
+                  <img src={p.previewUrl} alt={`Vignette ${idx + 1}`} className="w-full h-full object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/80 text-[9px] font-bold text-center text-white py-0.5">
+                    {idx + 1}
+                  </span>
+                </button>
+              ))}
+
+              {/* Quick Add Page Thumbnail Card */}
+              <button
+                onClick={onClose}
+                className="shrink-0 w-12 h-15 rounded-lg border-2 border-dashed border-white/30 hover:border-white/70 bg-white/5 flex flex-col items-center justify-center text-white/60 hover:text-white transition-all cursor-pointer"
+                title="Ajouter une autre page"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-[9px] font-bold mt-0.5">+</span>
+              </button>
             </div>
           </div>
         ) : (
-          /* Grid View of all captured photos */
-          <div className="max-w-4xl mx-auto">
-            {photos.length === 0 ? (
-              <div className="text-center py-16 text-white/60">
-                <p className="text-sm">Aucune photo scannée pour l’instant.</p>
-                <button
-                  onClick={onClose}
-                  className="mt-4 px-4 py-2 rounded-xl bg-[#5B8DEF] text-white text-xs font-semibold cursor-pointer"
+          /* --- GRID VIEW MODE: Spacious, Clean Document Cards --- */
+          <div className="max-w-4xl w-full mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+              {photos.map((photo, idx) => (
+                <div
+                  key={photo.id}
+                  className="group relative bg-[#121826] border border-white/20 hover:border-white rounded-2xl overflow-hidden transition-all duration-200 shadow-xl flex flex-col"
                 >
-                  Retourner à l'appareil photo
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {photos.map((photo, idx) => (
-                  <div
-                    key={photo.id}
-                    className="group relative bg-white/5 border border-white/10 hover:border-[#5B8DEF]/60 rounded-2xl overflow-hidden transition-all shadow-md flex flex-col"
-                  >
-                    {/* Top index badge */}
-                    <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold text-white border border-white/10">
-                      Page {idx + 1}
-                    </div>
+                  {/* Clean Page Badge */}
+                  <div className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/15 shadow-sm">
+                    Page {idx + 1}
+                  </div>
 
-                    {/* Quick Delete button (top right) */}
+                  {/* Clean Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(idx);
+                    }}
+                    className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-black/70 hover:bg-[#E8604C] text-white/80 hover:text-white backdrop-blur-md transition-colors cursor-pointer border border-white/15"
+                    title="Supprimer cette page"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Image Canvas (Click opens freeform crop) */}
+                  <div
+                    onClick={() => setIsCroppingIndex(idx)}
+                    className="aspect-[3/4] w-full bg-[#0B0F19] overflow-hidden cursor-pointer flex items-center justify-center p-2.5 group-hover:bg-[#070A11] transition-colors"
+                    title="Cliquer pour recadrer librement"
+                  >
+                    <img
+                      src={photo.previewUrl}
+                      alt={`Page ${idx + 1}`}
+                      className="w-full h-full object-contain rounded-lg border border-white/10 group-hover:scale-102 transition-transform duration-200"
+                    />
+                  </div>
+
+                  {/* Clean Action Row */}
+                  <div className="p-2 border-t border-white/10 bg-black/40 flex items-center justify-between gap-1.5">
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(idx);
-                      }}
-                      className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-[#E8604C] text-white/80 hover:text-white backdrop-blur-md transition-colors cursor-pointer border border-white/10"
-                      title="Supprimer cette page"
+                      onClick={() => handleRotate(idx)}
+                      disabled={isRotating === idx}
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+                      title="Pivoter de 90°"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <RotateCw className={`w-3.5 h-3.5 ${isRotating === idx ? 'animate-spin' : ''}`} />
+                      <span className="text-[11px]">Pivoter</span>
                     </button>
 
-                    {/* Image Thumbnail */}
-                    <div
-                      onClick={() => setEditingPhotoIndex(idx)}
-                      className="aspect-[3/4] w-full bg-black/40 overflow-hidden cursor-pointer flex items-center justify-center p-1"
+                    <button
+                      onClick={() => setIsCroppingIndex(idx)}
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-white/15 hover:bg-[#75D6B0]/20 text-white hover:text-[#75D6B0] text-xs font-semibold transition-colors cursor-pointer active:scale-95"
+                      title="Recadrer librement avec les côtés"
                     >
-                      <img
-                        src={photo.previewUrl}
-                        alt={`Page ${idx + 1}`}
-                        className="w-full h-full object-contain rounded-lg group-hover:scale-102 transition-transform duration-200"
-                      />
-                    </div>
-
-                    {/* Quick Actions Bar */}
-                    <div className="p-2 border-t border-white/10 bg-black/40 flex items-center justify-between gap-1">
-                      <button
-                        onClick={() => handleRotate(idx)}
-                        disabled={isProcessing}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition-colors cursor-pointer"
-                        title="Pivoter de 90°"
-                      >
-                        <RotateCw className="w-3 h-3" />
-                        <span>Pivoter</span>
-                      </button>
-
-                      <button
-                        onClick={() => setEditingPhotoIndex(idx)}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-[#5B8DEF]/20 hover:bg-[#5B8DEF]/30 text-[#5B8DEF] text-[11px] font-semibold transition-colors cursor-pointer"
-                        title="Redimensionner ou rogner les marges"
-                      >
-                        <Crop className="w-3 h-3" />
-                        <span>Recadrer</span>
-                      </button>
-                    </div>
+                      <Crop className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">Recadrer</span>
+                    </button>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
 
-      {/* Bottom Actions Bar */}
-      <footer className="px-4 sm:px-6 py-4 border-t border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between gap-4">
+      {/* Bottom Bar: Return to Camera + Master Validate Button */}
+      <footer className="px-4 sm:px-8 py-4 border-t border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between gap-4">
         <button
           onClick={onClose}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
         >
           <Camera className="w-4 h-4" />
-          <span>Continuer à scanner</span>
+          <span>Prendre d'autres pages</span>
         </button>
 
+        {/* Master High-End Validate Button */}
         <button
           onClick={onValidate}
           disabled={photos.length === 0}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#75D6B0] hover:bg-[#5EC49D] text-[#1E2A3A] font-heading font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-xl shadow-[#75D6B0]/30 hover:shadow-2xl hover:shadow-[#75D6B0]/45 border border-[#75D6B0]/50 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Check className="w-4 h-4 stroke-[3]" />
-          <span>Valider ({photos.length} photo{photos.length > 1 ? 's' : ''})</span>
+          <Check className="w-4.5 h-4.5 stroke-[3]" />
+          <span>Valider ({photos.length} page{photos.length > 1 ? 's' : ''})</span>
         </button>
       </footer>
     </div>
