@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Check, X, RotateCw, Sparkles, RefreshCw } from 'lucide-react';
+import { Check, ArrowLeft, RotateCw } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
 import { compressImage } from '../../services/imageCompression';
 
@@ -17,10 +17,11 @@ interface CropRect {
 }
 
 export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
-  photo,
+  photo: initialPhoto,
   onSave,
   onCancel,
 }) => {
+  const [currentPhoto, setCurrentPhoto] = useState<UploadedPhoto>(initialPhoto);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -47,7 +48,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
       setIsRotating(true);
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.src = photo.previewUrl;
+      img.src = currentPhoto.previewUrl;
       await new Promise((res, rej) => {
         img.onload = res;
         img.onerror = rej;
@@ -67,17 +68,17 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
       );
       if (!blob) return;
 
-      const file = new File([blob], photo.name, { type: 'image/jpeg' });
+      const file = new File([blob], currentPhoto.name, { type: 'image/jpeg' });
       const { base64Data, dataUrl } = await compressImage(file);
 
-      onSave({
-        ...photo,
+      setCurrentPhoto({
+        ...currentPhoto,
         file,
         previewUrl: dataUrl,
         compressedBase64: base64Data,
         size: file.size,
       });
-      // reset crop to full
+      // Reset crop insets on rotation
       setCrop({ left: 4, top: 4, right: 4, bottom: 4 });
     } catch (err) {
       console.error('Erreur rotation:', err);
@@ -96,7 +97,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
     dragStartCropRef.current = { ...crop };
   };
 
-  // Window-level pointer movement for silky smooth, uninterrupted freeform dragging
+  // Window-level pointer movement for smooth, uninterrupted freeform dragging
   useEffect(() => {
     const handleGlobalPointerMove = (e: PointerEvent) => {
       if (!activeHandleRef.current || !dragStartPosRef.current || !dragStartCropRef.current) return;
@@ -110,7 +111,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
 
       const start = dragStartCropRef.current;
       const handle = activeHandleRef.current;
-      const MIN_SIZE = 5; // Minimal constraint: user has 100% freedom to crop as desired
+      const MIN_SIZE = 4; // Complete freedom to crop narrow or wide sections
 
       setCrop(() => {
         let { left, top, right, bottom } = { ...start };
@@ -136,31 +137,17 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
         } else if (handle === 'r') {
           right = Math.min(Math.max(start.right - dxPercent, 0), 100 - start.left - MIN_SIZE);
         } else if (handle === 'center') {
-          // Translate the whole crop zone
           const width = 100 - start.left - start.right;
           const height = 100 - start.top - start.bottom;
-
-          let newLeft = start.left + dxPercent;
-          let newTop = start.top + dyPercent;
-
-          if (newLeft < 0) newLeft = 0;
-          if (newLeft + width > 100) newLeft = 100 - width;
-
-          if (newTop < 0) newTop = 0;
-          if (newTop + height > 100) newTop = 100 - height;
-
+          const newLeft = Math.max(0, Math.min(start.left + dxPercent, 100 - width));
+          const newTop = Math.max(0, Math.min(start.top + dyPercent, 100 - height));
           left = newLeft;
-          right = 100 - newLeft - width;
           top = newTop;
+          right = 100 - newLeft - width;
           bottom = 100 - newTop - height;
         }
 
-        return {
-          left: Math.round(left * 10) / 10,
-          top: Math.round(top * 10) / 10,
-          right: Math.round(right * 10) / 10,
-          bottom: Math.round(bottom * 10) / 10,
-        };
+        return { left, top, right, bottom };
       });
     };
 
@@ -170,51 +157,69 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
       dragStartCropRef.current = null;
     };
 
-    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
     window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointercancel', handleGlobalPointerUp);
+
     return () => {
       window.removeEventListener('pointermove', handleGlobalPointerMove);
       window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerUp);
     };
   }, []);
 
-  // Apply Freeform Crop to Canvas and Save
+  // Apply crop and output compressed photo
   const handleApplyCrop = async () => {
     if (isSaving) return;
     try {
       setIsSaving(true);
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.src = photo.previewUrl;
+      img.src = currentPhoto.previewUrl;
       await new Promise((res, rej) => {
         img.onload = res;
         img.onerror = rej;
       });
 
-      const srcX = (crop.left / 100) * img.width;
-      const srcY = (crop.top / 100) * img.height;
-      const srcW = Math.max(((100 - crop.left - crop.right) / 100) * img.width, 10);
-      const srcH = Math.max(((100 - crop.top - crop.bottom) / 100) * img.height, 10);
+      // If barely cropped (<1% inset on all sides), save directly
+      const isVirtuallyFull =
+        crop.left < 1 && crop.top < 1 && crop.right < 1 && crop.bottom < 1;
+
+      if (isVirtuallyFull) {
+        onSave(currentPhoto);
+        return;
+      }
+
+      const naturalW = img.naturalWidth || img.width;
+      const naturalH = img.naturalHeight || img.height;
+
+      const sx = (crop.left / 100) * naturalW;
+      const sy = (crop.top / 100) * naturalH;
+      const sWidth = ((100 - crop.left - crop.right) / 100) * naturalW;
+      const sHeight = ((100 - crop.top - crop.bottom) / 100) * naturalH;
 
       const canvas = document.createElement('canvas');
-      canvas.width = Math.round(srcW);
-      canvas.height = Math.round(srcH);
-      const ctx = canvas.getContext('2d')!;
+      canvas.width = Math.max(1, Math.round(sWidth));
+      canvas.height = Math.max(1, Math.round(sHeight));
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas 2D unavailable');
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
 
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, 'image/jpeg', 0.92)
       );
-      if (!blob) return;
 
-      const file = new File([blob], photo.name, { type: 'image/jpeg' });
+      if (!blob) throw new Error('Blob creation failed');
+
+      const file = new File([blob], currentPhoto.name, { type: 'image/jpeg' });
       const { base64Data, dataUrl } = await compressImage(file);
 
       onSave({
-        ...photo,
+        ...currentPhoto,
         file,
         previewUrl: dataUrl,
         compressedBase64: base64Data,
@@ -228,39 +233,37 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-70 bg-[#070A11] flex flex-col justify-between text-white select-none animate-in fade-in duration-200">
-      {/* Top Header */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-4 bg-black/50 border-b border-white/10 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 bg-[#070A11] flex flex-col justify-between text-white select-none animate-in fade-in duration-200">
+      {/* Top Header: Exactly 1 Clean, Airy, Uncluttered Line */}
+      <header className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-8 border-b border-white/10 bg-black/40 backdrop-blur-md">
+        {/* Left: Reprendre / Retake */}
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-white/90 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+          title="Reprendre la photo"
         >
-          <X className="w-4 h-4" />
-          <span>Annuler</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>Reprendre</span>
         </button>
 
-        <div className="text-center">
-          <h3 className="font-heading font-bold text-sm sm:text-base text-white">
-            Recadrage libre
-          </h3>
-          <p className="text-[11px] text-white/60">
-            Ajustez directement les côtés ou les coins avec vos doigts
-          </p>
-        </div>
+        {/* Center: Clean, Single-Line Title */}
+        <h2 className="font-heading font-semibold text-sm sm:text-base text-white tracking-wide">
+          Ajuster la photo
+        </h2>
 
-        {/* Rotate Button */}
+        {/* Right: Pivoter 90° */}
         <button
           onClick={handleRotate}
           disabled={isRotating || isSaving}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-white/90 hover:text-white text-xs font-semibold transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
           title="Faire pivoter de 90°"
         >
           <RotateCw className={`w-3.5 h-3.5 ${isRotating ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">Pivoter</span>
+          <span>Pivoter</span>
         </button>
       </header>
 
-      {/* Main Interactive Canvas Area */}
+      {/* Main Interactive Canvas: Freeform Drag on Corners & Sides */}
       <main className="relative flex-1 flex items-center justify-center p-4 sm:p-6 overflow-hidden touch-none">
         <div
           ref={containerRef}
@@ -269,8 +272,8 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
           {/* Base Image */}
           <img
             ref={imgRef}
-            src={photo.previewUrl}
-            alt="Page à recadrer"
+            src={currentPhoto.previewUrl}
+            alt="Page à ajuster"
             className="max-h-[70vh] max-w-[92vw] object-contain block pointer-events-none"
           />
 
@@ -311,8 +314,8 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
             }}
             onPointerDown={(e) => handlePointerDown('center', e)}
           >
-            {/* 3x3 Rule of Thirds Grid for precise alignment */}
-            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-30">
+            {/* Subtle Rule of Thirds Grid for precise alignment */}
+            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-25">
               <div className="border-r border-b border-white" />
               <div className="border-r border-b border-white" />
               <div className="border-b border-white" />
@@ -330,7 +333,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
               className="absolute -top-4 left-6 right-6 h-8 cursor-ns-resize flex items-center justify-center touch-none group"
               onPointerDown={(e) => handlePointerDown('t', e)}
             >
-              <div className="w-12 h-2 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
+              <div className="w-12 h-1.5 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
             </div>
 
             {/* Bottom Side */}
@@ -338,7 +341,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
               className="absolute -bottom-4 left-6 right-6 h-8 cursor-ns-resize flex items-center justify-center touch-none group"
               onPointerDown={(e) => handlePointerDown('b', e)}
             >
-              <div className="w-12 h-2 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
+              <div className="w-12 h-1.5 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
             </div>
 
             {/* Left Side */}
@@ -346,7 +349,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
               className="absolute -left-4 top-6 bottom-6 w-8 cursor-ew-resize flex items-center justify-center touch-none group"
               onPointerDown={(e) => handlePointerDown('l', e)}
             >
-              <div className="h-12 w-2 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
+              <div className="h-12 w-1.5 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
             </div>
 
             {/* Right Side */}
@@ -354,7 +357,7 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
               className="absolute -right-4 top-6 bottom-6 w-8 cursor-ew-resize flex items-center justify-center touch-none group"
               onPointerDown={(e) => handlePointerDown('r', e)}
             >
-              <div className="h-12 w-2 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
+              <div className="h-12 w-1.5 bg-white rounded-full shadow-lg border border-black/30 group-hover:scale-110 transition-transform" />
             </div>
 
             {/* --- 4 CORNER HANDLES --- */}
@@ -393,23 +396,23 @@ export const InteractiveCropEditor: React.FC<InteractiveCropEditorProps> = ({
         </div>
       </main>
 
-      {/* Bottom Action Footer with Clean Validate Button */}
+      {/* Clean Bottom Footer: Pleine page + Bouton Valider rien de plus */}
       <footer className="px-5 sm:px-8 py-4 bg-black/60 border-t border-white/10 backdrop-blur-md flex items-center justify-between gap-4">
         <button
           onClick={() => setCrop({ left: 0, top: 0, right: 0, bottom: 0 })}
-          className="text-xs font-semibold text-white/80 hover:text-white transition-colors cursor-pointer px-4 py-2.5 rounded-xl hover:bg-white/10 border border-white/10"
+          className="text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer px-3.5 py-2 rounded-xl hover:bg-white/10 border border-white/10"
         >
-          Pleine page (sans bordures)
+          Pleine page
         </button>
 
-        {/* High-End Polished Validate Button */}
+        {/* Validate Button */}
         <button
           onClick={handleApplyCrop}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-lg shadow-[#75D6B0]/25 hover:shadow-xl hover:shadow-[#75D6B0]/35 border border-[#75D6B0]/40 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 sm:py-3 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-lg shadow-[#75D6B0]/25 hover:shadow-xl hover:shadow-[#75D6B0]/35 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
         >
           <Check className="w-4 h-4 stroke-[3]" />
-          <span>{isSaving ? 'Recadrage en cours...' : 'Valider le recadrage'}</span>
+          <span>{isSaving ? 'Validation...' : 'Valider'}</span>
         </button>
       </footer>
     </div>

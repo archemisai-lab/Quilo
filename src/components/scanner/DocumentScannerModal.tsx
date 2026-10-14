@@ -9,10 +9,11 @@ import {
   Check,
   AlertTriangle,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { UploadedPhoto } from '../../types/revision';
 import { compressImage } from '../../services/imageCompression';
-import { ScannerGalleryReview } from './ScannerGalleryReview';
+import { InteractiveCropEditor } from './InteractiveCropEditor';
 
 interface DocumentScannerModalProps {
   isOpen: boolean;
@@ -44,7 +45,9 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedInSession, setCapturedInSession] = useState<UploadedPhoto[]>([]);
   const [shutterFlash, setShutterFlash] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<UploadedPhoto | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Discreet advice state
   const [activeAdvice, setActiveAdvice] = useState<{ type: AdviceType; text: string }>({
@@ -153,13 +156,17 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
   // Light and motion analyzer: only advise when an actual problem is detected
   useEffect(() => {
-    if (!isOpen || permissionState !== 'granted') return;
+    if (!isOpen || permissionState !== 'granted' || pendingPhoto) return;
 
     let isMounted = true;
     const sampleCanvas = document.createElement('canvas');
     sampleCanvas.width = 64;
     sampleCanvas.height = 48;
     const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+
+    let lowLightStreak = 0;
+    let glareStreak = 0;
+    let motionStreak = 0;
 
     const analyzeFrame = () => {
       if (!isMounted) return;
@@ -168,76 +175,96 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       if (video && video.readyState >= 2 && sampleCtx) {
         try {
           sampleCtx.drawImage(video, 0, 0, 64, 48);
-          const imgData = sampleCtx.getImageData(0, 0, 64, 48);
-          const data = imgData.data;
+          const frame = sampleCtx.getImageData(0, 0, 64, 48);
+          const data = frame.data;
 
-          let totalLuminance = 0;
-          let count = 0;
-          for (let i = 0; i < data.length; i += 16) {
+          let totalBrightness = 0;
+          let diffSum = 0;
+          const prevData = lastFrameDataRef.current;
+
+          for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
-            totalLuminance += 0.299 * r + 0.587 * g + 0.114 * b;
-            count++;
-          }
-          const avgLum = Math.round(totalLuminance / (count || 1));
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            totalBrightness += lum;
 
-          let motionDiff = 0;
-          if (lastFrameDataRef.current && lastFrameDataRef.current.length === data.length) {
-            const prev = lastFrameDataRef.current;
-            let diffSum = 0;
-            let sampleCount = 0;
-            for (let i = 0; i < data.length; i += 32) {
-              diffSum += Math.abs(data[i] - prev[i]);
-              sampleCount++;
+            if (prevData) {
+              const prevLum = 0.299 * prevData[i] + 0.587 * prevData[i + 1] + 0.114 * prevData[i + 2];
+              diffSum += Math.abs(lum - prevLum);
             }
-            motionDiff = diffSum / (sampleCount || 1);
           }
+
+          const pixelCount = data.length / 4;
+          const avgBrightness = totalBrightness / pixelCount;
+          const avgDiff = prevData ? diffSum / pixelCount : 0;
+
           lastFrameDataRef.current = new Uint8ClampedArray(data);
 
-          if (avgLum < 55) {
-            setActiveAdvice({
-              type: 'low-light',
-              text: 'Lumière faible — Allumez une lampe',
-            });
-          } else if (avgLum > 225) {
-            setActiveAdvice({
-              type: 'overexposed',
-              text: 'Reflets intenses sur la page',
-            });
-          } else if (motionDiff > 16) {
-            setActiveAdvice({
-              type: 'moving',
-              text: 'Stabilisez votre appareil',
-            });
+          if (avgBrightness < 45) {
+            lowLightStreak++;
           } else {
-            setActiveAdvice({ type: 'none', text: '' });
+            lowLightStreak = Math.max(0, lowLightStreak - 1);
           }
+
+          if (avgBrightness > 225) {
+            glareStreak++;
+          } else {
+            glareStreak = Math.max(0, glareStreak - 1);
+          }
+
+          if (avgDiff > 28) {
+            motionStreak++;
+          } else {
+            motionStreak = Math.max(0, motionStreak - 1);
+          }
+
+          let nextAdvice: { type: AdviceType; text: string } = { type: 'none', text: '' };
+
+          if (lowLightStreak >= 4) {
+            nextAdvice = {
+              type: 'low-light',
+              text: 'Luminosité faible : rapprochez une lumière ou allumez le flash',
+            };
+          } else if (glareStreak >= 4) {
+            nextAdvice = {
+              type: 'overexposed',
+              text: 'Reflet intense détecté : inclinez légèrement votre page',
+            };
+          } else if (motionStreak >= 4) {
+            nextAdvice = {
+              type: 'moving',
+              text: 'Appareil en mouvement : stabilisez pour une netteté maximale',
+            };
+          }
+
+          setActiveAdvice(nextAdvice);
         } catch {
-          // ignore
+          // ignore frame errors
         }
       }
 
-      setTimeout(() => {
-        if (isMounted) {
-          animFrameRef.current = requestAnimationFrame(analyzeFrame);
-        }
-      }, 250);
+      animFrameRef.current = requestAnimationFrame(analyzeFrame);
     };
 
     animFrameRef.current = requestAnimationFrame(analyzeFrame);
 
     return () => {
       isMounted = false;
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
     };
-  }, [isOpen, permissionState]);
+  }, [isOpen, permissionState, pendingPhoto]);
 
-  // Start or stop on open/close
+  // Lifecycle
   useEffect(() => {
     if (isOpen) {
       startCamera();
       setCapturedInSession([]);
+      setPendingPhoto(null);
+      setEditingIndex(null);
+      setToastMessage(null);
     } else {
       stopCamera();
     }
@@ -246,7 +273,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     };
   }, [isOpen, startCamera, stopCamera]);
 
-  // Capture Photo Handler
+  // Capture Photo Handler: immediately opens the single-photo adjustment screen
   const capturePhoto = async () => {
     if (!videoRef.current || isCapturing || remainingSlots <= 0) return;
 
@@ -293,7 +320,9 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         size: file.size,
       };
 
-      setCapturedInSession((prev) => [...prev, newPhoto]);
+      // Immediately display the adjustment screen for this photo
+      setEditingIndex(null);
+      setPendingPhoto(newPhoto);
     } catch (err) {
       console.error('Erreur capture photo:', err);
     } finally {
@@ -301,13 +330,60 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     }
   };
 
-  // Finish session and commit photos
+  // Called when user validates the crop & rotation
+  const handleSaveAdjustedPhoto = (savedPhoto: UploadedPhoto) => {
+    if (editingIndex !== null) {
+      // Updated an existing page
+      setCapturedInSession((prev) => {
+        const next = [...prev];
+        next[editingIndex] = savedPhoto;
+        return next;
+      });
+      setToastMessage('Page mise à jour');
+    } else {
+      // Added a new page
+      setCapturedInSession((prev) => [...prev, savedPhoto]);
+      setToastMessage(`Page ${capturedInSession.length + 1} validée`);
+    }
+
+    setPendingPhoto(null);
+    setEditingIndex(null);
+
+    // Auto-clear toast after 2.5s
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2500);
+  };
+
+  // Cancel adjustment / Retake photo
+  const handleCancelAdjust = () => {
+    setPendingPhoto(null);
+    setEditingIndex(null);
+  };
+
+  // Finish session and commit all photos
   const handleDone = () => {
     if (capturedInSession.length > 0) {
       onAddPhotos(capturedInSession);
     }
     stopCamera();
     onClose();
+  };
+
+  // Remove the last scanned photo
+  const handleRemoveLast = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCapturedInSession((prev) => prev.slice(0, -1));
+    setToastMessage('Page supprimée');
+    setTimeout(() => setToastMessage(null), 2000);
+  };
+
+  // Click on thumbnail to re-edit that photo
+  const handleReEditLast = () => {
+    if (capturedInSession.length === 0) return;
+    const lastIdx = capturedInSession.length - 1;
+    setEditingIndex(lastIdx);
+    setPendingPhoto(capturedInSession[lastIdx]);
   };
 
   if (!isOpen) return null;
@@ -363,7 +439,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         </div>
       </header>
 
-      {/* Main Viewfinder Area: Clean & Unobstructed (No tilt bar at all) */}
+      {/* Main Viewfinder Area: Clean & Unobstructed */}
       <main className="relative flex-1 flex items-center justify-center overflow-hidden">
         {/* Permission Request State */}
         {permissionState === 'requesting' && (
@@ -421,7 +497,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         {permissionState === 'granted' && (
           <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4 sm:p-6">
             <div className="relative w-full max-w-[340px] sm:max-w-[400px] aspect-[3/4] max-h-[66vh] flex items-center justify-center">
-              {/* Clean White Viewfinder Corner Brackets (no blue borders) */}
+              {/* Clean White Viewfinder Corner Brackets */}
               <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-white/90 rounded-tl-lg shadow-sm" />
               <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-white/90 rounded-tr-lg shadow-sm" />
               <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-white/90 rounded-bl-lg shadow-sm" />
@@ -430,8 +506,18 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
               {/* Discreet Viewfinder Border */}
               <div className="absolute inset-0 rounded-xl border border-white/20" />
 
+              {/* Subtle Success Toast Notification */}
+              {toastMessage && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-1.5 rounded-full bg-[#75D6B0] text-[#0A0E17] text-xs font-heading font-bold flex items-center gap-1.5 shadow-lg shadow-[#75D6B0]/20">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>{toastMessage}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Floating Real-Time Advice: ONLY appears if an issue is detected */}
-              {activeAdvice.type !== 'none' && (
+              {!toastMessage && activeAdvice.type !== 'none' && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-[300px] animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-3.5 py-1.5 rounded-full text-center text-xs font-medium backdrop-blur-md bg-black/80 border border-white/20 text-[#FFC04D] flex items-center justify-center gap-1.5 shadow-md">
                     {activeAdvice.type === 'low-light' ? (
@@ -450,63 +536,40 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         )}
       </main>
 
-      {/* Bottom Controls Bar: Realistic Stacked Photo Deck + Shutter + Clean Validate Button */}
+      {/* Bottom Controls Bar: Thumbnail Preview + Shutter + Clean Validate Button */}
       <footer className="relative z-20 px-6 pt-3 pb-8 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          {/* Left: REALISTIC STACKED PHOTO DECK (No blue borders, authentic paper/photo depth) */}
+          {/* Left: Thumbnail Preview of last captured page */}
           <div className="w-24 flex items-center justify-start">
             {capturedInSession.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setIsReviewOpen(true)}
-                className="group relative cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center"
-                title="Ouvrir la galerie des pages scannées"
-              >
-                <div className="relative w-12 h-15">
-                  {/* Layer 3: Deepest stacked card (if >= 3 photos) */}
-                  {capturedInSession.length >= 3 && (
-                    <div className="absolute inset-0 w-12 h-15 rounded-lg bg-[#2A3548] border border-white/60 shadow-md transform -rotate-10 -translate-x-2 translate-y-1 transition-transform duration-200 group-hover:-rotate-14 overflow-hidden">
-                      {capturedInSession[capturedInSession.length - 3] && (
-                        <img
-                          src={capturedInSession[capturedInSession.length - 3].previewUrl}
-                          alt="Page -2"
-                          className="w-full h-full object-cover opacity-50"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Layer 2: Middle stacked card (if >= 2 photos) */}
-                  {capturedInSession.length >= 2 && (
-                    <div className="absolute inset-0 w-12 h-15 rounded-lg bg-[#1E2738] border border-white/80 shadow-md transform rotate-7 translate-x-1.5 translate-y-0.5 transition-transform duration-200 group-hover:rotate-10 overflow-hidden">
-                      {capturedInSession[capturedInSession.length - 2] && (
-                        <img
-                          src={capturedInSession[capturedInSession.length - 2].previewUrl}
-                          alt="Page -1"
-                          className="w-full h-full object-cover opacity-70"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Layer 1: Front top card (Clean white rim, sharp thumbnail, authentic paper shadow) */}
-                  <div className="relative w-12 h-15 rounded-lg overflow-hidden border-2 border-white bg-[#0F172A] shadow-xl transform -rotate-1 transition-transform duration-200 group-hover:scale-105">
-                    <img
-                      src={capturedInSession[capturedInSession.length - 1].previewUrl}
-                      alt="Dernière page scannée"
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Floating Count Badge in crisp dark glass with gold accent */}
-                    <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#0A0E17] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white/40 shadow-lg">
-                      {capturedInSession.length}
-                    </div>
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={handleReEditLast}
+                  className="relative w-12 h-15 rounded-lg overflow-hidden border-2 border-white bg-[#0F172A] shadow-xl transform active:scale-95 transition-all cursor-pointer"
+                  title="Réajuster la dernière page"
+                >
+                  <img
+                    src={capturedInSession[capturedInSession.length - 1].previewUrl}
+                    alt="Dernière page"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Badge count */}
+                  <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#0A0E17] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white/40 shadow-lg">
+                    {capturedInSession.length}
                   </div>
-                </div>
+                </button>
 
-                <span className="text-[10px] text-white/70 font-medium mt-1 group-hover:text-white transition-colors">
-                  Pages ({capturedInSession.length})
-                </span>
-              </button>
+                {/* Subtle Delete Button */}
+                <button
+                  type="button"
+                  onClick={handleRemoveLast}
+                  className="absolute -bottom-1.5 -left-1.5 p-1 rounded-full bg-black/80 hover:bg-[#E8604C] text-white/80 hover:text-white border border-white/20 transition-colors cursor-pointer shadow-md"
+                  title="Supprimer la dernière page"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
             ) : (
               /* Minimalist Empty State Placeholder */
               <div className="w-12 h-15 rounded-lg border border-white/20 bg-white/5 flex flex-col items-center justify-center text-white/40 text-[10px]">
@@ -532,13 +595,13 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
             </button>
           </div>
 
-          {/* Right: PREMIUM REFINED VALIDATE BUTTON */}
+          {/* Right: Clean Validate Button (Finishes and imports all pages) */}
           <div className="w-24 flex items-center justify-end">
             {capturedInSession.length > 0 ? (
               <button
                 onClick={handleDone}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#75D6B0] hover:bg-[#5EC49D] text-[#0A0E17] font-heading font-bold text-xs sm:text-sm shadow-lg shadow-[#75D6B0]/25 hover:shadow-xl hover:shadow-[#75D6B0]/35 border border-[#75D6B0]/40 transition-all active:scale-95 cursor-pointer"
-                title="Valider toutes les pages scannées"
+                title="Valider et importer les pages scannées"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>Valider</span>
@@ -548,24 +611,21 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
                 onClick={onClose}
                 className="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors cursor-pointer"
               >
-                Annuler
+                Fermer
               </button>
             )}
           </div>
         </div>
       </footer>
 
-      {/* Dedicated Gallery Review Modal */}
-      <ScannerGalleryReview
-        isOpen={isReviewOpen}
-        photos={capturedInSession}
-        onClose={() => setIsReviewOpen(false)}
-        onUpdatePhotos={(updated) => setCapturedInSession(updated)}
-        onValidate={() => {
-          setIsReviewOpen(false);
-          handleDone();
-        }}
-      />
+      {/* Screen that appears immediately after capturing a photo to freely resize, rotate, and validate */}
+      {pendingPhoto && (
+        <InteractiveCropEditor
+          photo={pendingPhoto}
+          onSave={handleSaveAdjustedPhoto}
+          onCancel={handleCancelAdjust}
+        />
+      )}
     </div>
   );
 };
