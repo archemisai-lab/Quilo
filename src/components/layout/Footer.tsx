@@ -4,6 +4,7 @@ import { QuiloMascot } from '../../assets/QuiloMascot';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { PrivacyModal } from '../modals/PrivacyModal';
 import { LegalModal } from '../modals/LegalModal';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Smartphone,
   Download,
@@ -18,10 +19,12 @@ import {
 
 interface FooterProps {
   onNavigate: (page: PageRoute) => void;
+  currentPage?: PageRoute;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPage }) => {
   const currentYear = new Date().getFullYear();
+  const { user } = useAuth();
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
 
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -35,6 +38,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       setShowDesktopGuide(true);
     }
   };
+
+  const isLanding = currentPage === 'landing';
 
   return (
     <footer className="bg-[#FFFFFF] border-t border-[#E1E7F0] mt-auto no-print">
@@ -111,41 +116,69 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </p>
             <div className="pt-1 flex items-center gap-2 text-[11px] text-[#4B5A70]">
               <span className="w-2 h-2 rounded-full bg-[#75D6B0] inline-block shrink-0" />
-              <span>Stockage 100% privé sur votre navigateur (IndexedDB)</span>
+              <span>Comptes personnels sécurisés et synchronisés sur le Cloud</span>
             </div>
           </div>
 
-          {/* Quick Navigation (Cols 6-8) */}
+          {/* Quick Navigation / Account (Cols 6-8) */}
           <div className="md:col-span-3 space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A3A] font-heading">
-              Application
-            </h2>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <button
-                  onClick={() => onNavigate('upload')}
-                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
-                >
-                  Créer une fiche de cours
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('my-sheets')}
-                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
-                >
-                  Mes fiches enregistrées
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('landing')}
-                  className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
-                >
-                  Accueil & Démonstration
-                </button>
-              </li>
-            </ul>
+            {isLanding || !user ? (
+              <>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A3A] font-heading">
+                  Espace Membre
+                </h2>
+                <ul className="space-y-2 text-xs">
+                  <li>
+                    <button
+                      onClick={() => onNavigate('login')}
+                      className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
+                    >
+                      Se connecter
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => onNavigate('register')}
+                      className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
+                    >
+                      Créer un compte
+                    </button>
+                  </li>
+                </ul>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A3A] font-heading">
+                  Application
+                </h2>
+                <ul className="space-y-2 text-xs">
+                  <li>
+                    <button
+                      onClick={() => onNavigate('upload')}
+                      className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
+                    >
+                      Créer une fiche de cours
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => onNavigate('my-sheets')}
+                      className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
+                    >
+                      Mes fiches enregistrées
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => onNavigate('profile')}
+                      className="text-[#4B5A70] hover:text-[#385DE8] transition-colors cursor-pointer"
+                    >
+                      Mon profil
+                    </button>
+                  </li>
+                </ul>
+              </>
+            )}
           </div>
 
           {/* Legal & Privacy as Modals (Cols 9-12) */}
@@ -173,7 +206,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </button>
               </li>
               <li className="text-[11px] text-[#4B5A70]/80 pt-1">
-                Conçu pour les notes personnelles manuscrites des élèves. Pas de compte requis.
+                Conçu pour les notes personnelles manuscrites des élèves. Données protégées et synchronisées.
               </li>
             </ul>
           </div>

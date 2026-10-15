@@ -10,7 +10,7 @@ import {
   where,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, removeUndefinedFields } from './firebase';
 import { RevisionSheet } from '../types/revision';
 
 const SHEETS_COLLECTION = 'sheets';
@@ -108,7 +108,7 @@ export async function saveSheetToFirestore(
   };
 
   try {
-    await setDoc(sheetRef, payload, { merge: true });
+    await setDoc(sheetRef, removeUndefinedFields(payload), { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `${SHEETS_COLLECTION}/${cleanId}`);
   }
@@ -123,6 +123,20 @@ export async function deleteSheetFromFirestore(id: string): Promise<void> {
     await deleteDoc(sheetRef);
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `${SHEETS_COLLECTION}/${id}`);
+  }
+}
+
+/**
+ * Delete all revision sheets belonging to a user (used when deleting account)
+ */
+export async function deleteAllUserSheets(userId: string): Promise<void> {
+  try {
+    const q = query(collection(db, SHEETS_COLLECTION), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    const deletePromises = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
+    await Promise.all(deletePromises);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, SHEETS_COLLECTION);
   }
 }
 

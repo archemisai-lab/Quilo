@@ -28,12 +28,19 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
       await sendPasswordReset(email.trim());
       setIsSent(true);
     } catch (err: any) {
-      console.error('Erreur réinitialisation:', err);
-      if (err.code === 'auth/user-not-found') {
+      if (
+        err?.code === 'auth/operation-not-allowed' ||
+        err?.message?.includes('operation-not-allowed')
+      ) {
+        setError(
+          "L'authentification par email n'est pas encore activée dans la console Firebase pour ce projet (Authentication > Sign-in method)."
+        );
+      } else if (err.code === 'auth/user-not-found') {
         setError('Aucun compte n’est associé à cette adresse email.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Format d’adresse email invalide.');
       } else {
+        console.warn('Erreur réinitialisation:', err?.message || err);
         setError('Impossible d’envoyer le lien de réinitialisation. Veuillez réessayer.');
       }
     } finally {

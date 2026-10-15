@@ -17,6 +17,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [operationNotAllowed, setOperationNotAllowed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,21 +29,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     try {
       setError(null);
+      setOperationNotAllowed(false);
       setLoading(true);
       await signInWithEmail(email.trim(), password);
       onNavigate(onSuccessRedirect);
     } catch (err: any) {
-      console.error('Erreur connexion:', err);
       if (
-        err.code === 'auth/invalid-credential' ||
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password'
+        err?.code === 'auth/operation-not-allowed' ||
+        err?.message?.includes('operation-not-allowed')
+      ) {
+        setOperationNotAllowed(true);
+        setError(
+          "La connexion par Email / Mot de passe n'est pas encore activée dans la console Firebase pour ce projet."
+        );
+      } else if (
+        err?.code === 'auth/invalid-credential' ||
+        err?.code === 'auth/user-not-found' ||
+        err?.code === 'auth/wrong-password'
       ) {
         setError('Adresse email ou mot de passe incorrect.');
-      } else if (err.code === 'auth/too-many-requests') {
+      } else if (err?.code === 'auth/too-many-requests') {
         setError('Trop de tentatives infructueuses. Veuillez patienter un instant.');
       } else {
-        setError(err.message || 'Impossible de se connecter. Veuillez réessayer.');
+        console.warn('Erreur connexion:', err?.message || err);
+        setError(err?.message || 'Impossible de se connecter. Veuillez réessayer.');
       }
     } finally {
       setLoading(false);
@@ -50,16 +60,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
     try {
       setError(null);
       setLoading(true);
       await signInWithGoogle();
       onNavigate(onSuccessRedirect);
     } catch (err: any) {
-      console.error('Erreur Google login:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('Connexion avec Google interrompue. Veuillez réessayer.');
+      if (
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request'
+      ) {
+        return;
       }
+      if (err?.code === 'auth/popup-blocked') {
+        setError('La fenêtre de connexion a été bloquée par le navigateur. Veuillez autoriser les fenêtres pop-up.');
+        return;
+      }
+      console.warn('Google login interrompu:', err?.message || err);
+      setError('Connexion avec Google interrompue. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -85,9 +104,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="bg-[#FFFFFF] border border-[#E1E7F0] rounded-2xl p-6 sm:p-8 shadow-xs">
           {/* Error Banner */}
           {error && (
-            <div className="mb-5 p-3.5 bg-[#FFF0EE] border border-[#E8604C]/30 rounded-xl flex items-start gap-2.5 text-xs text-[#E8604C]">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <p className="flex-1 leading-relaxed">{error}</p>
+            <div className="mb-5 p-3.5 bg-[#FFF0EE] border border-[#E8604C]/30 rounded-xl text-xs text-[#E8604C]">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#E8604C]" />
+                <div className="flex-1">
+                  <p className="leading-relaxed font-semibold">{error}</p>
+                  {operationNotAllowed && (
+                    <div className="mt-2.5 pt-2.5 border-t border-[#E8604C]/20 text-[#1E2A3A]">
+                      <p className="text-xs text-[#4B5A70] mb-3 leading-relaxed">
+                        Pour utiliser la connexion par email / mot de passe, activez l'option dans la console Firebase (<strong>Authentication &gt; Sign-in method &gt; Email/Mot de passe</strong>).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleGoogleSignIn}
+                        disabled={loading}
+                        className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#5B8DEF] hover:bg-[#385DE8] rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                      >
+                        Se connecter avec Google à la place
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

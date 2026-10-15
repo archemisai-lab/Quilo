@@ -61,6 +61,24 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
+/**
+ * Recursively cleans an object to strip out any `undefined` values,
+ * which Cloud Firestore rejects with "Unsupported field value: undefined".
+ */
+export function removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
+  const cleaned: any = Array.isArray(obj) ? [] : {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined) {
+      if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+        cleaned[key] = removeUndefinedFields(val);
+      } else {
+        cleaned[key] = val;
+      }
+    }
+  }
+  return cleaned as T;
+}
+
 // Connection check on boot
 export async function testConnection(): Promise<boolean> {
   try {

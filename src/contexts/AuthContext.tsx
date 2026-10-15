@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
   User,
   onAuthStateChanged,
@@ -10,9 +10,14 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../services/firebase';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { auth, db, handleFirestoreError, OperationType, removeUndefinedFields } from '../services/firebase';
+import { deleteAllUserSheets } from '../services/sheetsFirestore';
 import { UserProfile } from '../types/revision';
 
 interface AuthContextType {
@@ -30,6 +35,7 @@ interface AuthContextType {
   sendPasswordReset: (email: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   updateUserProfileData: (updates: Partial<UserProfile>) => Promise<void>;
+  deleteAccount: (currentPassword?: string) => Promise<void>;
   logOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -40,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const googleAuthInProgress = useRef(false);
 
   // Fetch or create user profile in Firestore
   const fetchOrCreateProfile = async (firebaseUser: User, defaultName?: string, grade?: string) => {
@@ -56,9 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           schoolGrade: grade || 'Lycée',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          photoUrl: firebaseUser.photoURL || undefined,
+          ...(firebaseUser.photoURL ? { photoUrl: firebaseUser.photoURL } : {}),
         };
-        await setDoc(userDocRef, newProfile);
+        await setDoc(userDocRef, removeUndefinedFields(newProfile));
         setProfile(newProfile);
       }
     } catch (err) {
@@ -113,11 +120,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const cred = await signInWithPopup(auth, provider);
-    if (cred.user) {
-      await fetchOrCreateProfile(cred.user);
+    if (googleAuthInProgress.current) {
+      return;
+    }
+    googleAuthInProgress.current = true;
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const cred = await signInWithPopup(auth, provider);
+      if (cred.user) {
+        await fetchOrCreateProfile(cred.user);
+      }
+    } catch (err: any) {
+      if (
+        err?.code === 'auth/cancelled-popup-request' ||
+        err?.code === 'auth/popup-closed-by-user'
+      ) {
+        // Normal user cancellation - do not treat as fatal error
+        return;
+      }
+      throw err;
+    } finally {
+      googleAuthInProgress.current = false;
     }
   };
 
@@ -134,10 +158,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfileData = async (updates: Partial<UserProfile>) => {
     if (!user) throw new Error('Utilisateur non connecté');
     const userDocRef = doc(db, 'users', user.uid);
-    const updatedData = {
+    const updatedData = removeUndefinedFields({
       ...updates,
       updatedAt: new Date().toISOString(),
-    };
+    });
     try {
       await updateDoc(userDocRef, updatedData);
       setProfile((prev) => (prev ? { ...prev, ...updatedData } : null));
@@ -149,6 +173,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     if (user) {
       await fetchOrCreateProfile(user);
+    }
+  };
+
+  const deleteAccount = async (currentPassword?: string) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Aucun utilisateur connecté');
+
+    const isPasswordUser = currentUser.providerData.some((p) => p.providerId === 'password');
+    const isGoogleUser = currentUser.providerData.some((p) => p.providerId === 'google.com');
+
+    // If signed in with password and a password was passed, re-authenticate first
+    if (isPasswordUser && currentPassword && currentUser.email) {
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+    }
+
+    try {
+      // 1. Delete all user revision sheets
+      await deleteAllUserSheets(currentUser.uid);
+
+      // 2. Delete user profile document
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      try {
+        await deleteDoc(userDocRef);
+      } catch (e) {
+        console.warn('Erreur suppression document utilisateur:', e);
+      }
+
+      // 3. Delete Firebase Auth user
+      await deleteUser(currentUser);
+      setUser(null);
+      setProfile(null);
+    } catch (err: any) {
+      if (err?.code === 'auth/requires-recent-login') {
+        if (isGoogleUser) {
+          // Trigger Google popup to re-authenticate
+          const provider = new GoogleAuthProvider();
+          await reauthenticateWithPopup(currentUser, provider);
+          // Retry deletion
+          await deleteAllUserSheets(currentUser.uid);
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          try {
+            await deleteDoc(userDocRef);
+          } catch {}
+          await deleteUser(currentUser);
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+      }
+      throw err;
     }
   };
 
@@ -169,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendPasswordReset,
         resendVerificationEmail,
         updateUserProfileData,
+        deleteAccount,
         logOut,
         refreshProfile,
       }}

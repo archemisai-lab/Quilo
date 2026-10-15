@@ -40,6 +40,16 @@ export const SharedSheetPage: React.FC<SharedSheetPageProps> = ({
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    }
+  }, [user, onNavigate]);
+
+  if (!user) {
+    return null;
+  }
+
+  useEffect(() => {
     async function loadShared() {
       if (!sheetId) {
         setError('Aucun identifiant de fiche fourni.');

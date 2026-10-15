@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { PageRoute, UploadedPhoto } from '../types/revision';
 import { Camera, Upload, Trash2, ArrowRight, AlertCircle, Info, Sparkles, ScanLine } from 'lucide-react';
 import { compressImage } from '../services/imageCompression';
 import { DocumentScannerModal } from '../components/scanner/DocumentScannerModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UploadPageProps {
   photos: UploadedPhoto[];
@@ -17,11 +18,23 @@ export const UploadPage: React.FC<UploadPageProps> = ({
   onPhotosChange,
   onNavigate,
 }) => {
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Strict route & creation guard
+  useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    }
+  }, [user, onNavigate]);
+
+  if (!user) {
+    return null;
+  }
 
   const handleFiles = async (filesList: FileList | null) => {
     if (!filesList || filesList.length === 0) return;

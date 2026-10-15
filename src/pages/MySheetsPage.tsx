@@ -38,6 +38,16 @@ export const MySheetsPage: React.FC<MySheetsPageProps> = ({
   const [sheetToDelete, setSheetToDelete] = useState<RevisionSheet | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  React.useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    }
+  }, [user, onNavigate]);
+
+  if (!user) {
+    return null;
+  }
+
   const confirmDelete = async () => {
     if (!sheetToDelete) return;
     try {

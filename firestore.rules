@@ -50,7 +50,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
       allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming());
       allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming()) && incoming().id == existing().id;
-      allow delete: if false;
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
     }
 
     // Revision Sheets Collection

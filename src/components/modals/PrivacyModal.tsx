@@ -57,19 +57,19 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ isOpen, onClose }) =
             </p>
           </section>
 
-          {/* 2. Stockage 100% local */}
+          {/* 2. Stockage sécurisé sur votre compte Firebase Cloud */}
           <section className="space-y-1.5">
             <div className="flex items-center gap-2 text-[#1E2A3A]">
               <HardDrive className="w-4 h-4 text-[#385DE8]" />
               <h3 className="font-heading font-semibold text-base">
-                2. Vos fiches restent sur votre appareil (IndexedDB)
+                2. Vos fiches sont sécurisées sur votre compte Cloud
               </h3>
             </div>
             <p>
-              Toutes les fiches que vous créez sont enregistrées localement dans la base de données sécurisée de votre navigateur (IndexedDB).
+              Toutes les fiches que vous créez sont enregistrées de manière sécurisée et chiffrée sur Firebase Cloud Firestore, rattachées exclusivement à votre compte utilisateur.
             </p>
             <p className="text-xs text-[#4B5A70]/90">
-              Cela signifie que nous ne possédons pas vos fiches. Si vous videz les données de votre navigateur ou changez d'appareil, vos fiches locales ne sont pas transférées.
+              Vous seul avez accès à vos fiches personnelles, synchronisées en temps réel entre votre smartphone, votre tablette et votre ordinateur.
             </p>
           </section>
 

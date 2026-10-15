@@ -19,15 +19,24 @@ import { sampleRevisionSheet } from './services/db';
 import {
   subscribeToUserSheets,
   saveSheetToFirestore,
-  getSheetById,
 } from './services/sheetsFirestore';
 import { migrateIndexedDBToFirestore } from './services/migration';
 import { testConnection } from './services/firebase';
 import { generateRevisionSheet, fetchDynamicSteps } from './services/gemini';
 import { decodeSharedSheet } from './services/share';
 import { AlertCircle } from 'lucide-react';
+import { QuiloMascot } from './assets/QuiloMascot';
 import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+const PUBLIC_PAGES: PageRoute[] = [
+  'landing',
+  'login',
+  'register',
+  'forgot-password',
+  'legal',
+  'privacy',
+];
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
@@ -49,6 +58,14 @@ function AppContent() {
     testConnection();
   }, []);
 
+  // Strict route guard: redirect to login if not authenticated on any protected page
+  useEffect(() => {
+    if (!authLoading && !user && !PUBLIC_PAGES.includes(currentPage)) {
+      setCurrentPage('login');
+      setErrorMessage('Connexion requise : vous devez être connecté à un compte pour accéder à cette page.');
+    }
+  }, [authLoading, user, currentPage]);
+
   // Handle URL parameters for shared sheets (?sheetId=... or ?shared=...)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -57,17 +74,27 @@ function AppContent() {
 
     if (firestoreSheetId) {
       setSharedSheetId(firestoreSheetId);
-      setCurrentPage('shared-sheet');
+      if (!user && !authLoading) {
+        setErrorMessage('Veuillez vous connecter pour consulter cette fiche partagée.');
+        setCurrentPage('login');
+      } else {
+        setCurrentPage('shared-sheet');
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (sharedParam) {
       const decoded = decodeSharedSheet(sharedParam);
       if (decoded) {
         setCurrentSheet(decoded);
-        setCurrentPage('result');
+        if (!user && !authLoading) {
+          setErrorMessage('Veuillez vous connecter pour ouvrir cette fiche de révision.');
+          setCurrentPage('login');
+        } else {
+          setCurrentPage('result');
+        }
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, []);
+  }, [user, authLoading]);
 
   // Real-time synchronization of revision sheets with Firestore for logged-in user
   // Also runs migration from legacy IndexedDB once on login
@@ -93,6 +120,13 @@ function AppContent() {
   }, [user]);
 
   const handleStartGeneration = async () => {
+    // Strict creation security: user must be logged in
+    if (!user) {
+      setErrorMessage('Connexion requise : vous devez être connecté à un compte pour créer une fiche.');
+      setCurrentPage('login');
+      return;
+    }
+
     if (photos.length === 0) {
       setErrorMessage('Veuillez ajouter au moins une photo de cours.');
       setCurrentPage('upload');
@@ -122,10 +156,8 @@ function AppContent() {
         signal: controller.signal,
       });
 
-      // If user is authenticated, save directly into Cloud Firestore
-      if (user) {
-        await saveSheetToFirestore(newSheet, user.uid, user.displayName || undefined);
-      }
+      // Save directly into Cloud Firestore under user's UID
+      await saveSheetToFirestore(newSheet, user.uid, user.displayName || undefined);
 
       setCurrentSheet(newSheet);
       setCurrentPage('result');
@@ -154,6 +186,10 @@ function AppContent() {
   };
 
   const handleResetNewSheet = () => {
+    if (!user) {
+      setCurrentPage('login');
+      return;
+    }
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -179,7 +215,7 @@ function AppContent() {
   // Save sheet to Firebase Cloud Firestore
   const handleSaveToMySheets = async (sheetToSave: RevisionSheet) => {
     if (!user) {
-      // Prompt user to connect
+      setErrorMessage('Connexion requise pour enregistrer cette fiche.');
       setCurrentPage('login');
       return;
     }
@@ -200,6 +236,20 @@ function AppContent() {
       throw err;
     }
   };
+
+  // Loading state during initial authentication check on protected routes
+  if (authLoading && !PUBLIC_PAGES.includes(currentPage)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F6FA] text-[#1E2A3A]">
+        <div className="p-3 bg-white border border-[#E1E7F0] rounded-2xl shadow-xs mb-3">
+          <QuiloMascot size={42} className="animate-pulse" />
+        </div>
+        <p className="font-heading font-semibold text-sm text-[#1E2A3A]">
+          Sécurisation de votre session Quilo...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F6FA] text-[#1E2A3A]">
@@ -231,66 +281,76 @@ function AppContent() {
         </div>
       )}
 
-      {/* Main Page Routing */}
+      {/* Main Page Routing with 100% Strict Protection */}
       <main className="flex-1">
         {currentPage === 'landing' && (
-          <LandingPage
-            onNavigate={setCurrentPage}
-            onSelectSheet={(sheet) => {
-              setCurrentSheet(sheet);
-            }}
-          />
+          <LandingPage onNavigate={setCurrentPage} />
         )}
 
-        {currentPage === 'upload' && (
-          <UploadPage
-            photos={photos}
-            onPhotosChange={setPhotos}
-            onNavigate={setCurrentPage}
-          />
-        )}
+        {currentPage === 'upload' &&
+          (user ? (
+            <UploadPage
+              photos={photos}
+              onPhotosChange={setPhotos}
+              onNavigate={setCurrentPage}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} onSuccessRedirect="upload" />
+          ))}
 
-        {currentPage === 'prompt' && (
-          <PromptPage
-            photos={photos}
-            prompt={prompt}
-            onPromptChange={setPrompt}
-            subjectHint={subjectHint}
-            onSubjectHintChange={setSubjectHint}
-            onNavigate={setCurrentPage}
-            onStartGeneration={handleStartGeneration}
-            onCancel={handleResetNewSheet}
-          />
-        )}
+        {currentPage === 'prompt' &&
+          (user ? (
+            <PromptPage
+              photos={photos}
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              subjectHint={subjectHint}
+              onSubjectHintChange={setSubjectHint}
+              onNavigate={setCurrentPage}
+              onStartGeneration={handleStartGeneration}
+              onCancel={handleResetNewSheet}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} onSuccessRedirect="upload" />
+          ))}
 
-        {currentPage === 'generating' && (
-          <GeneratingPage
-            steps={generationSteps}
-            photoCount={photos.length}
-            onCancel={handleCancelGeneration}
-          />
-        )}
+        {currentPage === 'generating' &&
+          (user ? (
+            <GeneratingPage
+              steps={generationSteps}
+              photoCount={photos.length}
+              onCancel={handleCancelGeneration}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} />
+          ))}
 
-        {currentPage === 'result' && (
-          <ResultPage
-            sheet={currentSheet}
-            onNavigate={setCurrentPage}
-            onResetNewSheet={handleResetNewSheet}
-            isSaved={isSheetInMySheets(currentSheet)}
-            onSaveToMySheets={handleSaveToMySheets}
-          />
-        )}
+        {currentPage === 'result' &&
+          (user ? (
+            <ResultPage
+              sheet={currentSheet}
+              onNavigate={setCurrentPage}
+              onResetNewSheet={handleResetNewSheet}
+              isSaved={isSheetInMySheets(currentSheet)}
+              onSaveToMySheets={handleSaveToMySheets}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} />
+          ))}
 
-        {currentPage === 'my-sheets' && (
-          <MySheetsPage
-            sheets={savedSheets}
-            onSelectSheet={(sheet) => {
-              setCurrentSheet(sheet);
-            }}
-            onRefreshSheets={() => {}}
-            onNavigate={setCurrentPage}
-          />
-        )}
+        {currentPage === 'my-sheets' &&
+          (user ? (
+            <MySheetsPage
+              sheets={savedSheets}
+              onSelectSheet={(sheet) => {
+                setCurrentSheet(sheet);
+              }}
+              onRefreshSheets={() => {}}
+              onNavigate={setCurrentPage}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} onSuccessRedirect="my-sheets" />
+          ))}
 
         {currentPage === 'login' && (
           <LoginPage onNavigate={setCurrentPage} />
@@ -304,22 +364,28 @@ function AppContent() {
           <ForgotPasswordPage onNavigate={setCurrentPage} />
         )}
 
-        {currentPage === 'profile' && (
-          <ProfilePage
-            onNavigate={setCurrentPage}
-            savedSheetsCount={savedSheets.length}
-          />
-        )}
+        {currentPage === 'profile' &&
+          (user ? (
+            <ProfilePage
+              onNavigate={setCurrentPage}
+              savedSheetsCount={savedSheets.length}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} onSuccessRedirect="profile" />
+          ))}
 
-        {currentPage === 'shared-sheet' && sharedSheetId && (
-          <SharedSheetPage
-            sheetId={sharedSheetId}
-            onNavigate={setCurrentPage}
-            onSelectSheet={(sheet) => {
-              setCurrentSheet(sheet);
-            }}
-          />
-        )}
+        {currentPage === 'shared-sheet' && sharedSheetId &&
+          (user ? (
+            <SharedSheetPage
+              sheetId={sharedSheetId}
+              onNavigate={setCurrentPage}
+              onSelectSheet={(sheet) => {
+                setCurrentSheet(sheet);
+              }}
+            />
+          ) : (
+            <LoginPage onNavigate={setCurrentPage} />
+          ))}
 
         {currentPage === 'legal' && <LegalPage onNavigate={setCurrentPage} />}
 
@@ -327,7 +393,9 @@ function AppContent() {
       </main>
 
       {/* Footer */}
-      {currentPage !== 'generating' && <Footer onNavigate={setCurrentPage} />}
+      {currentPage !== 'generating' && (
+        <Footer currentPage={currentPage} onNavigate={setCurrentPage} />
+      )}
 
       {/* PWA Offline indicator */}
       <OfflineIndicator />

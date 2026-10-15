@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageRoute, RevisionSheet } from '../types/revision';
 import { RevisionSheetView } from '../components/sheet/RevisionSheetView';
 import { ExportBar } from '../components/sheet/ExportBar';
 import { BookOpen, PlusCircle, BookmarkPlus, Check, Loader2, ChevronRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ResultPageProps {
   sheet: RevisionSheet;
@@ -19,8 +20,19 @@ export const ResultPage: React.FC<ResultPageProps> = ({
   isSaved = false,
   onSaveToMySheets,
 }) => {
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    }
+  }, [user, onNavigate]);
+
+  if (!user) {
+    return null;
+  }
 
   const isActuallySaved = isSaved || justSaved;
 

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageRoute, UploadedPhoto } from '../types/revision';
 import { ArrowLeft, ArrowRight, Sparkles, HelpCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PromptPageProps {
   photos: UploadedPhoto[];
@@ -44,7 +45,19 @@ export const PromptPage: React.FC<PromptPageProps> = ({
   onStartGeneration,
   onCancel,
 }) => {
+  const { user } = useAuth();
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
+
+  // Strict route & creation guard
+  useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    }
+  }, [user, onNavigate]);
+
+  if (!user) {
+    return null;
+  }
 
   const handleChipClick = (chip: string) => {
     setSelectedChip(chip);
